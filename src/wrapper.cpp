@@ -2,8 +2,10 @@
 #define EMSCRIPTEN_KEEPALIVE
 #endif
 
+#include <emscripten.h>
 #include <emscripten/bind.h>
 #include <emscripten/val.h>
+#include <emscripten/em_asm.h>
 #include <cmath>
 #include <fstream>
 #include <memory>
@@ -13,6 +15,8 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <future>
+#include <stdexcept>
 
 
 #include "hnswlib/hnswlib.h"
@@ -27,6 +31,8 @@ void normalizePoint(std::vector<float>& vec) {
   }
 }
 
+
+/*****************/
 class L2Space {
 public:
   uint32_t dim_;
@@ -42,6 +48,8 @@ public:
   uint32_t getNumDimensions() { return dim_; }
 };
 
+
+/*****************/
 class InnerProductSpace {
 public:
   uint32_t dim_;
@@ -69,6 +77,7 @@ public:
 };
 
 
+/*****************/
 class CustomFilterFunctor: public hnswlib::BaseFilterFunctor {
 public:
   CustomFilterFunctor(emscripten::val callback): callback_(callback) {}
@@ -86,6 +95,7 @@ private:
 };
 
 
+/*****************/
 class LoadBruteforceSearchIndexWorker {
 public:
   LoadBruteforceSearchIndexWorker(const std::string& filename, hnswlib::BruteforceSearch<float>** index,
@@ -118,6 +128,8 @@ private:
   hnswlib::SpaceInterface<float>** space_;
 };
 
+
+/*****************/
 class SaveBruteforceSearchIndexWorker {
 public:
   SaveBruteforceSearchIndexWorker(const std::string& filename, hnswlib::BruteforceSearch<float>** index)
@@ -267,7 +279,121 @@ public:
 };
 
 
+/*****************/
+class LoadHierarchicalNSWIndexWorker {
+public:
+  LoadHierarchicalNSWIndexWorker(const std::string& filename, const bool allow_replace_deleted,
+    hnswlib::HierarchicalNSW<float>** index, hnswlib::SpaceInterface<float>** space)
+    : filename_(filename), allow_replace_deleted_(allow_replace_deleted), index_(index), space_(space) {}
 
+  ~LoadHierarchicalNSWIndexWorker() {}
+
+  bool execute() {
+    std::future<bool> result = std::async(std::launch::async, [&]() {
+      try {
+        std::ifstream ifs(filename_);
+        if (ifs.is_open()) {
+          ifs.close();
+        }
+        else {
+          throw std::runtime_error("failed to open file: " + filename_);
+        }
+        if (*index_) delete* index_;
+        *index_ = new hnswlib::HierarchicalNSW<float>(*space_, filename_, false, 0, allow_replace_deleted_);
+        return true;
+      }
+      catch (const std::exception& e) {
+        return false;
+      }
+      });
+    return result.get();
+  }
+
+private:
+  std::string filename_;
+  bool allow_replace_deleted_;
+  hnswlib::HierarchicalNSW<float>** index_;
+  hnswlib::SpaceInterface<float>** space_;
+};
+
+
+/*****************/
+
+#include <emscripten/bind.h>
+#include <emscripten/val.h>
+#include <emscripten/em_asm.h>
+
+class AsyncWorkerBase {
+public:
+  virtual ~AsyncWorkerBase() {}
+  virtual void Execute() = 0;
+
+  void SetCompletionCallback(std::function<void()> callback) { completion_callback_ = callback; }
+
+  void Schedule() { emscripten_async_call(&AsyncWorkerBase::Run, this, 0); }
+
+  static EMSCRIPTEN_KEEPALIVE void Run(void* arg) {
+    AsyncWorkerBase* worker = static_cast<AsyncWorkerBase*>(arg);
+    worker->Execute();
+    if (worker->completion_callback_) {
+      worker->completion_callback_();
+    }
+  }
+
+protected:
+  std::function<void()> completion_callback_;
+};
+
+class SaveHierarchicalNSWIndexWorker: public AsyncWorkerBase {
+public:
+  SaveHierarchicalNSWIndexWorker(const std::string& filename, hnswlib::HierarchicalNSW<float>** index)
+    : filename_(filename), result_(false), index_(index) {}
+
+  ~SaveHierarchicalNSWIndexWorker() {}
+
+  void Execute() override {
+    try {
+      if (*index_ == nullptr) throw std::runtime_error("search index is not constructed.");
+      (*index_)->saveIndex(filename_);
+      result_ = true;
+    }
+    catch (const std::exception& e) {
+      result_ = false;
+      error_ = "Hnswlib Error: " + std::string(e.what());
+    }
+  }
+
+  bool GetResult() const { return result_; }
+
+  std::string GetError() const { return error_; }
+
+private:
+  std::string filename_;
+  bool result_;
+  std::string error_;
+  hnswlib::HierarchicalNSW<float>** index_;
+};
+
+void save_index_async(const std::string& filename, hnswlib::HierarchicalNSW<float>** index,
+  emscripten::val resolve, emscripten::val reject) {
+  SaveHierarchicalNSWIndexWorker* worker = new SaveHierarchicalNSWIndexWorker(filename, index);
+  auto callback = [worker, resolve, reject]() {
+    if (worker->GetError().empty()) {
+      resolve(worker->GetResult());
+    }
+    else {
+      reject(worker->GetError());
+    }
+    delete worker;
+  };
+
+  worker->SetCompletionCallback(callback);
+  worker->Schedule();
+}
+
+
+
+/*****************/
 
 
 EMSCRIPTEN_BINDINGS(hnswlib) {
@@ -308,5 +434,22 @@ EMSCRIPTEN_BINDINGS(hnswlib) {
     .function("getMaxElements", &BruteforceSearch::getMaxElements)
     .function("getCurrentCount", &BruteforceSearch::getCurrentCount)
     .function("getNumDimensions", &BruteforceSearch::getNumDimensions);
+
+  class_<LoadHierarchicalNSWIndexWorker>("LoadHierarchicalNSWIndexWorker")
+    .constructor<const std::string&, bool, hnswlib::HierarchicalNSW<float>**, hnswlib::SpaceInterface<float>**>()
+    .function("execute", &LoadHierarchicalNSWIndexWorker::execute);
+
+  emscripten::function("save_index_async", &save_index_async,
+    emscripten::allow_raw_pointers()
+  );
+
+  emscripten::class_<SaveHierarchicalNSWIndexWorker>("SaveHierarchicalNSWIndexWorker")
+    .constructor<const std::string&, hnswlib::HierarchicalNSW<float>**>()
+    .function("execute", &SaveHierarchicalNSWIndexWorker::Execute)
+    .function("getResult", &SaveHierarchicalNSWIndexWorker::GetResult)
+    .function("getError", &SaveHierarchicalNSWIndexWorker::GetError);
+
+
+
 }
 
