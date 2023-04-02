@@ -203,8 +203,8 @@ describe("hnswlib.HierarchicalNSW", () => {
       index = new hnswlib.HierarchicalNSW("l2", 3);
     });
 
-    it("returns 0 if called before the index is initialized", () => {
-      expect(index.getMaxElements()).toBe(0);
+    it("throws if called before the index is initialized", () => {
+      expect(() => index.getMaxElements()).toThrow(testErrors.indexNotInitalized)
     });
 
     it("returns maximum number of elements", () => {
@@ -217,8 +217,8 @@ describe("hnswlib.HierarchicalNSW", () => {
       index = new hnswlib.HierarchicalNSW("l2", 3);
     });
 
-    it("returns 0 if called before the index is initialized", () => {
-      expect(index.getCurrentCount()).toBe(0);
+    it("throws error if called before the index is initialized", () => {
+      expect(() => index.getCurrentCount()).toThrow(testErrors.indexNotInitalized)
     });
 
     it("returns current number of elements", () => {
@@ -348,22 +348,21 @@ describe("hnswlib.HierarchicalNSW", () => {
       expect(() => {
         // @ts-expect-error
         index.markDelete();
-      }).toThrow("Expected 1 arguments, but got 0.");
+      }).toThrow(testErrors.arugmentCount);
     });
 
     it("throws an error if given a non-Number argument", () => {
       expect(() => {
         // @ts-expect-error
         index.markDelete("0");
-      }).toThrow("Invalid the first argument type, must be a number.");
+      }).toThrow(testErrors.unsignedIntArgument);
     });
 
     it("throws an error if called before the index is initialized", () => {
       expect(() => {
         index.markDelete(0);
-      }).toThrow(
-        "Search index has not been initialized, call `initIndex` in advance."
-      );
+      }).toThrow(testErrors.indexNotInitalized);
+      
     });
 
     it("marks the element as deleted", () => {

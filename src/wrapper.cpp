@@ -370,8 +370,6 @@ namespace emscripten {
       if (index_ == nullptr) {
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
-
-      if (index_ == nullptr) return 0;
       return index_->maxelements_;
     }
 
@@ -380,7 +378,6 @@ namespace emscripten {
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
 
-      if (index_ == nullptr) return 0;
       return index_->cur_element_count;
     }
 
@@ -610,7 +607,10 @@ namespace emscripten {
     }
 
     int getMaxElements() {
-      if (index_ == nullptr) return 0;
+      if (index_ == nullptr) {
+        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
+      }
+
       return index_->max_elements_;
     }
 
@@ -695,6 +695,7 @@ namespace emscripten {
       if (index_ == nullptr) {
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
+
       return index_ == nullptr ? 0 : static_cast<uint32_t>(index_->cur_element_count);
     }
 
