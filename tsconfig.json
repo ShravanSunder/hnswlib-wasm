@@ -1,9 +1,6 @@
 {
-  "typedocOptions": {
-    "entryPoints": ["lib/index.d.ts"],
-    "out": "doc"
-  },
   "compilerOptions": {
+    "baseUrl": ".",
     "target": "esnext",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
@@ -19,7 +16,7 @@
     "jsx": "preserve",
     "incremental": true,
     "paths": {
-      "~~/lib": ["./lib/*"],
+      "~lib/*": ["./lib/*"],
     }
   },
   "include": ["lib/**/*.ts", "lib/**/*.d.ts", "src/**/*.ts", "test/**/*"]

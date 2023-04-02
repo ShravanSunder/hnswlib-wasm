@@ -4,6 +4,7 @@
 
 import type { JestConfigWithTsJest } from 'ts-jest'
 
+
 import { defaults as tsjPreset } from 'ts-jest/presets'
 // import { defaultsESM as tsjPreset } from 'ts-jest/presets';
 // import { jsWithTs as tsjPreset } from 'ts-jest/presets';
@@ -18,6 +19,9 @@ const jestConfig: JestConfigWithTsJest = {
   transform: {
     ...tsjPreset.transform,
     // [...]
+  },
+  moduleNameMapper: {
+    "^~lib/(.*)$": "<rootDir>/lib/$1",
   },
 }
 

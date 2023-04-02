@@ -1,5 +1,5 @@
 import path from 'path';
-import hnswlib from '../lib/hnswlib';
+import hnswlib from '~lib/hnswlib';
 import fs from 'fs/promises';
 import { HnswlibModule } from '../src/hnswlib';
 

@@ -3,18 +3,20 @@ CC = emcc
 
 # Set any necessary compiler flags, like optimization flags or features to be enabled.
 CFLAGS = -O3
-CFLAGS += -s DISABLE_EXCEPTION_CATCHING=0
+CFLAGS += -s DISABLE_EXCEPTION_CATCHING=1
+CFLAGS += -fwasm-exceptions
 CFLAGS += -s ALLOW_MEMORY_GROWTH=1
 CFLAGS += -s ALLOW_TABLE_GROWTH=1
 CFLAGS += -s WASM=1
 CFLAGS += -s MODULARIZE=1
 CFLAGS += -s EXPORT_NAME='hnswlib'
-CFLAGS += -s ASSERTIONS=0
+CFLAGS += -s ASSERTIONS=1
 CFLAGS += -s DEMANGLE_SUPPORT=0
 CFLAGS += --bind
 # CFLAGS += -s ENVIRONMENT=web,node
 # CFLAGS += -s VERBOSE=1
 CFLAGS += -gsource-map
+
 # CFLAGS += --source-map-base=http://localhost:8080/
 
 
