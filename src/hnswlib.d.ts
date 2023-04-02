@@ -112,6 +112,10 @@ export class BruteforceSearch {
    * @param {number} numDimensions The dimensionality of data points.
    */
   constructor(spaceName: SpaceName, numDimensions: number);
+
+  /** is index initalized */
+  isIndexInitialized(): boolean;
+
   /**
    * initializes search index.
    * @param {number} maxElements The maximum number of data points.
@@ -209,6 +213,7 @@ export class HierarchicalNSW {
     allowReplaceDeleted?: boolean
   ): void;
 
+  /** is index initalized */
   isIndexInitialized(): boolean;
 
   /**

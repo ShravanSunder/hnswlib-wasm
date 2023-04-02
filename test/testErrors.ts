@@ -1,6 +1,8 @@
 
 
 export const testErrors = {
+
+  indexSize : /The maximum number of elements has been reached in index/,
   vectorSize : /Invalid vector size. Must be equal to the dimension of the space./,
   vectorArgument : /Cannot convert .* to float/,
   

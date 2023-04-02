@@ -17,6 +17,8 @@
 #include <iostream>
 #include <future>
 #include <stdexcept>
+#include <stdio.h>
+
 
 
 #include "hnswlib/hnswlib.h"
@@ -245,9 +247,12 @@ namespace emscripten {
       else if (space_name == "ip") {
         space_ = new hnswlib::InnerProductSpace(static_cast<size_t>(dim_));
       }
-      else {
+      else if (space_name == "cosine") {
         space_ = new hnswlib::InnerProductSpace(static_cast<size_t>(dim_));
         normalize_ = true;
+      }
+      else {
+        throw std::invalid_argument("invalid space should be expected l2, ip, or cosine, name: " + space_name);
       }
     }
 
@@ -272,7 +277,24 @@ namespace emscripten {
 
     void readIndex(const std::string& filename) {
       if (index_) delete index_;
-      index_ = new hnswlib::BruteforceSearch<float>(space_, filename);
+
+      try {
+        index_ = new hnswlib::BruteforceSearch<float>(space_, filename);
+      }
+      catch (const std::runtime_error& e) {
+        // Check the error message and re-throw a different error if it matches the expected error
+        std::string errorMessage(e.what());
+        std::string target = "The maximum number of elements has been reached";
+
+        if (errorMessage.find(target) != std::string::npos) {
+          throw std::runtime_error("The maximum number of elements in the index has been reached. , please increased the index max_size.  max_size: " + std::to_string(index_->maxelements_));
+        }
+        else {
+          // Re-throw the original error if it's not the one you're looking for
+          throw;
+        }
+      }
+
     }
 
     void writeIndex(const std::string& filename) {
@@ -289,20 +311,25 @@ namespace emscripten {
       if (index_ == nullptr) {
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
-
       if (vec.size() != dim_) {
         throw std::invalid_argument("Invalid vector size. Must be equal to the dimension of the space. The dimension of the space is " + std::to_string(this->dim_) + ".");
       }
 
       std::vector<float>& mutableVec = const_cast<std::vector<float>&>(vec);
-
       if (normalize_) {
         internal::normalizePoint(mutableVec);
       }
 
+      if (index_->cur_element_count == index_->maxelements_) {
+        throw std::runtime_error("The maximum number of elements has been reached in index, please increased the index max_size.  max_size: " + std::to_string(index_->maxelements_));
+      }
 
-      index_->addPoint(reinterpret_cast<void*>(const_cast<float*>(mutableVec.data())), static_cast<hnswlib::labeltype>(idx));
-
+      try {
+        index_->addPoint(reinterpret_cast<void*>(mutableVec.data()), static_cast<hnswlib::labeltype>(idx));
+      }
+      catch (const std::exception& e) {
+        throw std::runtime_error("Hnswlib Error: " + std::string(e.what()));
+      }
     }
 
     void removePoint(uint32_t idx) {
@@ -549,7 +576,23 @@ namespace emscripten {
 
     void readIndex(const std::string& filename, bool allow_replace_deleted = false) {
       if (index_) delete index_;
-      index_ = new hnswlib::HierarchicalNSW<float>(space_, filename, false, 0, allow_replace_deleted);
+
+      try {
+        index_ = new hnswlib::HierarchicalNSW<float>(space_, filename, false, 0, allow_replace_deleted);
+      }
+      catch (const std::runtime_error& e) {
+        std::string errorMessage(e.what());
+        std::string target = "The maximum number of elements has been reached";
+
+        if (errorMessage.find(target) != std::string::npos) {
+          throw std::runtime_error("The maximum number of elements in the index has been reached. , please increased the index max_size.  max_size: " + std::to_string(index_->max_elements_));
+        }
+        else {
+          // Re-throw the original error if it's not the one you're looking for
+          throw;
+        }
+      }
+
     }
 
     void writeIndex(const std::string& filename) {
@@ -596,6 +639,10 @@ namespace emscripten {
 
       if (normalize_) {
         internal::normalizePoint(mutableVec);
+      }
+
+      if (index_->cur_element_count == index_->max_elements_) {
+        throw std::runtime_error("The maximum number of elements has been reached in index, please increased the index max_size.  max_size: " + std::to_string(index_->max_elements_));
       }
 
       try {

@@ -123,7 +123,7 @@ describe("hnswlib.HierarchicalNSW", () => {
       index.addPoint([2, 3, 4], 1,...defaultParams.addPoint);
       expect(() => {
         index.addPoint([3, 4, 5], 2, ...defaultParams.addPoint);
-      }).toThrow(/Hnswlib Error/);
+      }).toThrow(testErrors.indexSize);
       index.resizeIndex(3);
       index.addPoint([3, 4, 5], 2, ...defaultParams.addPoint);
       expect(index.getMaxElements()).toBe(3);
@@ -335,7 +335,7 @@ describe("hnswlib.HierarchicalNSW", () => {
       index.initIndex(1,...defaultParams.initIndex);      index.addPoint([1, 2, 3], 0, ...defaultParams.addPoint);
       expect(() => {
         index.addPoint([1, 2, 3], 1, ...defaultParams.addPoint);
-      }).toThrow(/Hnswlib Error/);
+      }).toThrow(testErrors.indexSize);
     });
   });
 
