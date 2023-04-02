@@ -17,6 +17,7 @@
     "incremental": true,
     "paths": {
       "~lib/*": ["./lib/*"],
+      "~test/*": ["./test/*"],
     }
   },
   "include": ["lib/**/*.ts", "lib/**/*.d.ts", "src/**/*.ts", "test/**/*"]

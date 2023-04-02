@@ -1,4 +1,5 @@
-import { HnswlibModule, L2Space } from "../lib/hnswlib";
+import { vectorSizeError, vectorArgumentError } from "./errors";
+import { HnswlibModule, L2Space } from "~lib/hnswlib";
 import { loadHnswlib } from "./loadHnswlib";
 
 describe("L2Space", () => {
@@ -35,8 +36,6 @@ describe("L2Space", () => {
   });
 
   describe("#distance", () => {
-    const argumentError = /Cannot convert .* to float/
-    const vectorError = /Invalid vector size. Must be equal to the dimension of the space./
     it("throws an error if no arguments are given", () => {
       expect(() => {
         // @ts-expect-error
@@ -59,16 +58,16 @@ describe("L2Space", () => {
       expect(() => {
         // @ts-expect-error
         space.distance([0, 1, 2], "bar");
-      }).toThrow(argumentError)
+      }).toThrow(vectorArgumentError)
     });
 
     it("throws an error if given an array with a length different from the number of dimensions", () => {
       expect(() => {
         space.distance([0, 1, 2, 3], [3, 4, 5]);
-      }).toThrow(vectorError);
+      }).toThrow(vectorSizeError);
       expect(() => {
         space.distance([0, 1, 2], [3, 4, 5, 6]);
-      }).toThrow(vectorError);
+      }).toThrow(vectorSizeError);
     });
 
     it("calculates squared Euclidean distance between two arrays", () => {

@@ -103,13 +103,10 @@ namespace emscripten {
       ipspace_ = std::unique_ptr<hnswlib::InnerProductSpace>(new hnswlib::InnerProductSpace(static_cast<size_t>(dim_)));
     }
 
-    float distance(emscripten::val arr_a, emscripten::val arr_b) {
-      std::vector<float> vec_a(dim_, 0.0);
-      std::vector<float> vec_b(dim_, 0.0);
+    float distance(const std::vector<float>& vec_a, const std::vector<float>& vec_b) {
 
-      for (uint32_t i = 0; i < dim_; i++) {
-        vec_a[i] = arr_a[i].as<float>();
-        vec_b[i] = arr_b[i].as<float>();
+      if (vec_a.size() != dim_ || vec_b.size() != dim_) {
+        throw std::invalid_argument("Invalid vector size. Must be equal to the dimension of the space. The dimension of the space is " + std::to_string(this->dim_) + ".");
       }
 
       hnswlib::DISTFUNC<float> df = ipspace_->get_dist_func();

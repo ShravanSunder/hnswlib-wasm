@@ -1,19 +1,31 @@
-const { InnerProductSpace } = require("../lib/hnswlib");
+import { loadHnswlib } from "./loadHnswlib";
+import hnswlib, { HnswlibModule, InnerProductSpace, L2Space } from "~lib/hnswlib";
+import { dimensionError, vectorArgumentError, vectorSizeError } from "./errors";
 
 describe("InnerProductSpace", () => {
+  let hnswlib: HnswlibModule;
+  let space: InnerProductSpace;
+
+  beforeAll(async () => {
+    // Instantiate the Emscripten module
+    hnswlib = await loadHnswlib();
+    space = new hnswlib.InnerProductSpace(3);
+  });
+
   it("throws an error if no arguments are given", () => {
     expect(() => {
-      new InnerProductSpace();
-    }).toThrow("Expected 1 arguments, but got 0.");
+      //@ts-expect-error
+      new hnswlib.InnerProductSpace();
+    }).toThrow("Tried to invoke ctor of InnerProductSpace with invalid number of parameters (0) - expected (1) parameters instead!");
   });
 
   it("throws an error if given a non-Number argument", () => {
     expect(() => {
-      new InnerProductSpace("yes");
-    }).toThrow("Invalid the first argument type, must be a number.");
+      //@ts-expect-error
+      new hnswlib.InnerProductSpace("yes");
+    }).toThrow(dimensionError);
   });
-
-  const space = new InnerProductSpace(3);
+  
 
   describe("#getNumDimensions", () => {
     it("returns number of dimensions", () => {
@@ -22,28 +34,35 @@ describe("InnerProductSpace", () => {
   });
 
   describe("#distance", () => {
+    
+
+
     it("throws an error if no arguments are given", () => {
       expect(() => {
+        //@ts-expect-error
         space.distance();
-      }).toThrow("Expected 2 arguments, but got 0.");
+      }).toThrow("function InnerProductSpace.distance called with 0 arguments, expected 2 args!");
     });
 
     it("throws an error if given a non-Array argument", () => {
       expect(() => {
+        //@ts-expect-error
         space.distance("foo", [0, 1, 2]);
-      }).toThrow("Invalid the first argument type, must be an Array.");
+      }).toThrow(vectorArgumentError);
       expect(() => {
+        //@ts-expect-error
         space.distance([0, 1, 2], "bar");
-      }).toThrow("Invalid the second argument type, must be an Array.");
+      }).toThrow(vectorArgumentError);
     });
 
     it("throws an error if given an array with a length different from the number of dimensions", () => {
+      
       expect(() => {
         space.distance([0, 1, 2, 3], [3, 4, 5]);
-      }).toThrow("Invalid the first array length (expected 3, but got 4).");
+      }).toThrow(vectorSizeError);
       expect(() => {
         space.distance([0, 1, 2], [3, 4, 5, 6]);
-      }).toThrow("Invalid the second array length (expected 3, but got 4).");
+      }).toThrow(vectorSizeError);
     });
 
     it("calculates one minus inner product between two arrays", () => {
