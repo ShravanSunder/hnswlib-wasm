@@ -27,6 +27,7 @@
     "ts": "^0.2.2"
   },
   "devDependencies": {
+    "@types/emscripten": "^1.39.6",
     "@types/jest": "^29.5.0",
     "@types/node": "^18.15.11",
     "eslint": "^8.37.0",

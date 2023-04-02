@@ -1,11 +1,12 @@
 import path from 'path';
-import hnswlib from '../lib/hnswlib.js';
+import hnswlib from '../lib/hnswlib';
 import fs from 'fs/promises';
+import { HnswlibModule } from '../src/hnswlib';
 
 /**
  * Load the HNSW library in node
  */
-export const loadHnswlib = async (): Promise<any> => {
+export const loadHnswlib = async (): Promise<HnswlibModule> => {
   try {
     const wasmPath = path.join(__dirname, '..', 'lib', 'hnswlib.wasm');
     const wasmBinary = await fs.readFile(wasmPath);
@@ -23,5 +24,6 @@ export const loadHnswlib = async (): Promise<any> => {
   } catch (err) {
     console.error('----------------------------------------');
     console.error('Error initializing the library:', err);
+    throw err;
   }
 };

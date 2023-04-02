@@ -12,9 +12,11 @@ CFLAGS += -s EXPORT_NAME='hnswlib'
 CFLAGS += -s ASSERTIONS=0
 CFLAGS += -s DEMANGLE_SUPPORT=0
 CFLAGS += --bind
-CFLAGS += -s ENVIRONMENT=web
-# CFLAGS += -s VERBOSE=0
+# CFLAGS += -s ENVIRONMENT=web,node
+# CFLAGS += -s VERBOSE=1
 CFLAGS += -gsource-map
+# CFLAGS += --source-map-base=http://localhost:8080/
+
 
 
 # Define the name of the output JavaScript file within the 'lib' directory.
@@ -37,6 +39,8 @@ all: $(OUTPUT)
 $(OUTPUT): $(SOURCES)
 		mkdir -p lib
 		$(CC) $(CFLAGS) $(LDFLAGS) $(SOURCES) -o $(OUTPUT)
+		cp ./src/hnswlib.d.ts ./lib/hnswlib.d.ts
+
 
 # Add a `clean` target to remove generated files from the 'lib' directory.
 clean:
