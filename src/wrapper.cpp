@@ -53,13 +53,18 @@ namespace emscripten {
 
 
   std::vector<float> normalizePoint(const std::vector<float>& vec) {
-    std::vector<float> result(vec);
-    const size_t dim = result.size();
-    const float norm = std::sqrt(std::fabs(std::inner_product(result.begin(), result.end(), result.begin(), 0.0f)));
-    if (norm > 0.0f) {
-      for (size_t i = 0; i < dim; i++) result[i] /= norm;
+    try {
+      std::vector<float> result(vec);
+      const size_t dim = result.size();
+      const float norm = std::sqrt(std::fabs(std::inner_product(result.begin(), result.end(), result.begin(), 0.0f)));
+      if (norm > 0.0f) {
+        for (size_t i = 0; i < dim; i++) result[i] /= norm;
+      }
+      return result;
     }
-    return result;
+    catch (const std::exception& e) {
+      throw std::runtime_error("Failed to normalize the point, check vector dimensions: " + std::string(e.what()));
+    }
   }
 
 
@@ -469,6 +474,7 @@ namespace emscripten {
     void initIndex(uint32_t max_elements, uint32_t m = 16, uint32_t ef_construction = 200, uint32_t random_seed = 100,
       bool allow_replace_deleted = false) {
       if (index_) delete index_;
+
       index_ = new hnswlib::HierarchicalNSW<float>(space_, max_elements, m, ef_construction, random_seed, allow_replace_deleted);
     }
 
@@ -496,11 +502,29 @@ namespace emscripten {
       if (index_ == nullptr) {
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
-
       std::vector<float> vec_copy(vec);
       if (normalize_) normalizePoint(vec_copy);
 
-      index_->addPoint(reinterpret_cast<void*>(vec_copy.data()), static_cast<hnswlib::labeltype>(idx), replace_deleted);
+      try {
+        index_->addPoint(reinterpret_cast<void*>(vec_copy.data()), static_cast<hnswlib::labeltype>(idx), replace_deleted);
+      }
+      catch (const std::exception& e) {
+        throw std::runtime_error("Hnswlib Error: " + std::string(e.what()));
+      }
+    }
+
+    int getMaxElements() {
+      if (index_ == nullptr) return 0;
+      return index_->max_elements_;
+    }
+
+    std::vector<int> getIdsList() {
+      std::vector<int> ids;
+      if (index_ == nullptr) return ids;
+      for (auto kv : index_->label_lookup_) {
+        ids.push_back(kv.first);
+      }
+      return ids;
     }
 
     void markDelete(uint32_t idx) {
@@ -648,6 +672,8 @@ namespace emscripten {
       .function("writeIndex", &HierarchicalNSW::writeIndex)
       .function("resizeIndex", &HierarchicalNSW::resizeIndex)
       .function("addPoint", &HierarchicalNSW::addPoint)
+      .function("getMaxElements", &HierarchicalNSW::getMaxElements)
+      .function("getIdsList", &HierarchicalNSW::getIdsList)
       .function("markDelete", &HierarchicalNSW::markDelete)
       .function("unmarkDelete", &HierarchicalNSW::unmarkDelete)
       .function("getCurrentCount", &HierarchicalNSW::getCurrentCount)

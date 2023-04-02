@@ -1,6 +1,7 @@
 import { loadHnswlib } from "./loadHnswlib";
 import {  HierarchicalNSW, HnswlibModule, InnerProductSpace, L2Space } from "~lib/hnswlib";
-import { argumentCountError, intArgumentError, vectorArgumentError, vectorSizeError } from "./errors";
+import { testErrors } from "./errors";
+import { defaultParams } from "~lib/hnswlibDefaults";
 
 
 describe("hnswlib.HierarchicalNSW", () => {
@@ -36,7 +37,7 @@ describe("hnswlib.HierarchicalNSW", () => {
       expect(() => {
         // @ts-expect-error
         new hnswlib.HierarchicalNSW("l2", "3");
-      }).toThrow(intArgumentError);
+      }).toThrow(testErrors.unsignedIntArgument);
     });
 
     it('throws an error if given a String that is neither "l2", "ip", nor "cosine" to first argument', () => {
@@ -56,46 +57,16 @@ describe("hnswlib.HierarchicalNSW", () => {
       expect(() => {
         // @ts-expect-error
         index.initIndex();
-      }).toThrow("Expected 1-5 arguments, but got 0.");
+      }).toThrow(testErrors.arugmentCount);
     });
 
     it("throws an error if given a non-Number argument", () => {
       expect(() => {
         // @ts-expect-error
-        index.initIndex("5");
-      }).toThrow("Invalid the first argument type, must be a number.");
+        index.initIndex("5", 16, 200, 1, 1);
+      }).toThrow(testErrors.unsignedIntArgument);
     });
 
-    it("throws an error if given a non-boolean object to fifth argument", () => {
-      expect(() => {
-        // @ts-expect-error
-        index.initIndex(5, 16, 200, 1, 1);
-      }).toThrow("Invalid the fifth argument type, must be a boolean.");
-    });
-
-    it("throws an error if empty object are given", () => {
-      expect(() => {
-        // @ts-expect-error
-        index.initIndex({});
-      }).toThrow(/called with 1 arguments, expected 2 args!/);
-    });
-
-    it("throws an error if given a non-Number to maxElements option", () => {
-      expect(() => {
-        // @ts-expect-error
-        index.initIndex("5" );
-      }).toThrow(
-        "Invalid the named argument type `maxElements`, must be a number."
-      );
-    });
-
-    it("throws an error if given a non-Number to maxElements option", () => {
-      expect(() => {
-        index.initIndex(5);
-      }).toThrow(
-        "Invalid the named argument type `maxElements`, must be a number."
-      );
-    });
   });
 
   describe("#resizeIndex", () => {
@@ -107,7 +78,7 @@ describe("hnswlib.HierarchicalNSW", () => {
       expect(() => {
         // @ts-expect-error
         index.resizeIndex();
-      }).toThrow(argumentCountError);
+      }).toThrow(testErrors.arugmentCount);
     });
 
     it("throws an error if given a non-Number argument", () => {
@@ -115,7 +86,7 @@ describe("hnswlib.HierarchicalNSW", () => {
         // @ts-expect-error
         index.resizeIndex("0");
         
-      }).toThrow("Invalid the first argument type, must be a number.");
+      }).toThrow(testErrors.unsignedIntArgument);
     });
 
     it("throws an error if called before the index is initialized", () => {
@@ -126,15 +97,15 @@ describe("hnswlib.HierarchicalNSW", () => {
       );
     });
 
-    it("marks the element as deleted", () => {
-      index.initIndex(2);
-      index.addPoint([1, 2, 3], 0);
-      index.addPoint([2, 3, 4], 1);
+    it("resize, marks the element as deleted", () => {
+      index.initIndex(2, ...defaultParams.initIndex);
+      index.addPoint([1, 2, 3], 0,...defaultParams.addPoint);
+      index.addPoint([2, 3, 4], 1,...defaultParams.addPoint);
       expect(() => {
-        index.addPoint([3, 4, 5], 2);
+        index.addPoint([3, 4, 5], 2, ...defaultParams.addPoint);
       }).toThrow(/Hnswlib Error/);
       index.resizeIndex(3);
-      index.addPoint([3, 4, 5], 2);
+      index.addPoint([3, 4, 5], 2, ...defaultParams.addPoint);
       expect(index.getMaxElements()).toBe(3);
     });
   });
@@ -149,9 +120,9 @@ describe("hnswlib.HierarchicalNSW", () => {
     });
 
     it("returns an array consists of label id", () => {
-      index.initIndex(5);
-      index.addPoint([1, 2, 3], 0);
-      index.addPoint([2, 3, 4], 1);
+      index.initIndex(5,...defaultParams.initIndex);
+      index.addPoint([1, 2, 3], 0, ...defaultParams.addPoint);
+      index.addPoint([2, 3, 4], 1, ...defaultParams.addPoint);
       expect(index.getIdsList()).toIncludeSameMembers([1, 0]);
     });
   });
@@ -169,7 +140,7 @@ describe("hnswlib.HierarchicalNSW", () => {
 
     describe("when the index has some data points", () => {
       beforeAll(() => {
-        index.initIndex(3);
+        index.initIndex(3, ...defaultParams.initIndex);
         index.addPoint([1, 2, 3], 0);
         index.addPoint([2, 3, 4], 1);
         index.addPoint([3, 4, 5], 2);

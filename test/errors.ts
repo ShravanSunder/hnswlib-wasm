@@ -1,8 +1,14 @@
-export const vectorSizeError = /Invalid vector size. Must be equal to the dimension of the space./;
-export const vectorArgumentError = /Cannot convert .* to float/
 
-export const intArgumentError = /Cannot convert .* to unsigned int/
 
-export const argumentCountError = /called with .* arguments, expected .* args!/
+export const testErrors = {
+  vectorSize : /Invalid vector size. Must be equal to the dimension of the space./,
+  vectorArgument : /Cannot convert .* to float/,
+  
+  unsignedIntArgument : /Cannot convert .* to unsigned int/,
+  
+  arugmentCount : /called with .* arguments, expected .* args!/,
+  
+  stringArgument : /Cannot pass non-string to std::string/,
+}
 
-export const stringArgumentError = /Cannot pass non-string to std::string/
+export type testErrorTypes = keyof typeof  testErrors;

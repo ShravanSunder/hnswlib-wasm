@@ -1,6 +1,6 @@
 import { loadHnswlib } from "./loadHnswlib";
 import hnswlib, { HnswlibModule, InnerProductSpace, L2Space } from "~lib/hnswlib";
-import { intArgumentError, vectorArgumentError, vectorSizeError } from "./errors";
+import { testErrors} from "./errors";
 
 describe("InnerProductSpace", () => {
   let hnswlib: HnswlibModule;
@@ -23,7 +23,7 @@ describe("InnerProductSpace", () => {
     expect(() => {
       //@ts-expect-error
       new hnswlib.InnerProductSpace("yes");
-    }).toThrow(intArgumentError);
+    }).toThrow(testErrors.unsignedIntArgument);
   });
   
 
@@ -48,21 +48,21 @@ describe("InnerProductSpace", () => {
       expect(() => {
         //@ts-expect-error
         space.distance("foo", [0, 1, 2]);
-      }).toThrow(vectorArgumentError);
+      }).toThrow(testErrors.vectorArgument);
       expect(() => {
         //@ts-expect-error
         space.distance([0, 1, 2], "bar");
-      }).toThrow(vectorArgumentError);
+      }).toThrow(testErrors.vectorArgument);
     });
 
     it("throws an error if given an array with a length different from the number of dimensions", () => {
       
       expect(() => {
         space.distance([0, 1, 2, 3], [3, 4, 5]);
-      }).toThrow(vectorSizeError);
+      }).toThrow(testErrors.vectorSize);
       expect(() => {
         space.distance([0, 1, 2], [3, 4, 5, 6]);
-      }).toThrow(vectorSizeError);
+      }).toThrow(testErrors.vectorSize);
     });
 
     it("calculates one minus inner product between two arrays", () => {

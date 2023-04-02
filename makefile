@@ -20,35 +20,43 @@ CFLAGS += -gsource-map
 # CFLAGS += --source-map-base=http://localhost:8080/
 
 
+# Define the source directory, the target directory
+SRC_DIR := ./src
+LIB_DIR := ./lib
+MY_COMMENT := /**** GENERATED FILE:  See src for files *****/ 
 
 # Define the name of the output JavaScript file within the 'lib' directory.
-OUTPUT = lib/hnswlib.js
+OUTPUT = $(LIB_DIR)/hnswlib.js
 
 # Define the list of source files that need to be compiled.
-SOURCES = ./src/wrapper.cpp
+SOURCES = ./$(SRC_DIR)/wrapper.cpp
 
 # Set the path to the HNSWLIB header.
-HNSWLIB_INCLUDE = ./src/hnswlib
+HNSWLIB_INCLUDE = ./$(SRC_DIR)/hnswlib
 
 # Add the include path to the compiler flags.
 CFLAGS += -I$(HNSWLIB_INCLUDE)
 
 # Create a target called `all` that builds the output file.
-all: $(OUTPUT)
+all: $(OUTPUT) copy_and_prepend
 
 # Define the rule for building the output file, which depends on the source files.
 # First, create the output directory if it doesn't exist, then compile and link the source files.
 $(OUTPUT): $(SOURCES)
-		mkdir -p lib
-		$(CC) $(CFLAGS) $(LDFLAGS) $(SOURCES) -o $(OUTPUT)
-		cp ./src/*.ts ./lib
-
+	mkdir -p lib
+	$(CC) $(CFLAGS) $(LDFLAGS) $(SOURCES) -o $(OUTPUT)
 
 # Add a `clean` target to remove generated files from the 'lib' directory.
 clean:
-		rm -f $(OUTPUT) lib/$(OUTPUT).wasm
+	rm -f $(OUTPUT) lib/$(OUTPUT).wasm
 
 .PHONY: all clean
 
 rebuild: clean all
 .PHONY: rebuild
+
+copy_and_prepend: $(wildcard $(SRC_DIR)/*.ts)
+	@cp $^ $(LIB_DIR)
+	@for f in $(LIB_DIR)/*.ts; do \
+	    echo "$(MY_COMMENT)" | cat - $$f > tmpfile && mv tmpfile $$f; \
+	done
