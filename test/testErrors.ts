@@ -8,7 +8,11 @@ export const testErrors = {
   
   arugmentCount : /called with .* arguments, expected .* args!/,
   
-  stringArgument : /Cannot pass non-string to std::string/,
+  stringArgument: /Cannot pass non-string to std::string/,
+  
+  indexNotInitalized: /Search index has not been initialized, call `initIndex` in advance/,
+
+  isNotFunction: /is not a function/,
 }
 
 export type testErrorTypes = keyof typeof  testErrors;

@@ -96,9 +96,9 @@ export class InnerProductSpace {
  * index = new BruteforceSearch('l2', numDimensions);
  * index.initIndex(maxElements);
  *
- * index.addPoint([0, 1, 2, 3, 4], 0);
- * index.addPoint([1, 2, 3, 4, 5], 1);
- * index.addPoint([3, 4, 5, 6, 6], 2);
+ * index.addPoint([0, 1, 2, 3, 4], 0, ...defaultParams.addPoint);
+ * index.addPoint([1, 2, 3, 4, 5], 1, ...defaultParams.addPoint);
+ * index.addPoint([3, 4, 5, 6, 6], 2, ...defaultParams.addPoint);
  *
  * const numNeighbors = 3;
  * const result = index.searchKnn([1, 4, 2, 3, 4], numNeighbors);
@@ -148,7 +148,7 @@ export class BruteforceSearch {
   searchKnn(
     queryPoint: number[],
     numNeighbors: number,
-    filter?: FilterFunction
+    filter: FilterFunction | undefined
   ): SearchResult;
   /**
    * returns the maximum number of data points that can be indexed.
@@ -177,9 +177,9 @@ export class BruteforceSearch {
  * index = new HierarchicalNSW('l2', numDimensions);
  * index.initIndex(maxElements, 16, 200, 100);
  *
- * index.addPoint([0, 1, 2, 3, 4], 0);
- * index.addPoint([1, 2, 3, 4, 5], 1);
- * index.addPoint([3, 4, 5, 6, 6], 2);
+ * index.addPoint([0, 1, 2, 3, 4], 0, ...defaultParams.addPoint);
+ * index.addPoint([1, 2, 3, 4, 5], 1, ...defaultParams.addPoint);
+ * index.addPoint([3, 4, 5, 6, 6], 2, ...defaultParams.addPoint);
  *
  * const numNeighbors = 3;
  * const result = index.searchKnn([1, 4, 2, 3, 4], numNeighbors);
@@ -208,6 +208,8 @@ export class HierarchicalNSW {
     randomSeed?: number,
     allowReplaceDeleted?: boolean
   ): void;
+
+  isIndexInitialized(): boolean;
 
   /**
    * loads the search index.
@@ -252,7 +254,7 @@ export class HierarchicalNSW {
   searchKnn(
     queryPoint: number[],
     numNeighbors: number,
-    filter?: FilterFunction
+    filter: FilterFunction | undefined
   ): SearchResult;
   /**
    * returns a list of all elements' indices.

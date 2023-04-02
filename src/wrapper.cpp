@@ -128,9 +128,18 @@ namespace emscripten {
   public:
     CustomFilterFunctor(emscripten::val callback): callback_(callback) {}
 
-    bool operator()(hnswlib::labeltype id) {
-      bool result = callback_.call<bool>("apply", id);
-      return result;
+    bool operator()(hnswlib::labeltype id) override {
+      if (callback_.isUndefined() || callback_.isNull()) {
+        throw std::invalid_argument("Invalid callback function for CustomFilterFunctor.");
+      }
+
+      try {
+        bool result = callback_.call<bool>("call", emscripten::val::undefined(), id);
+        return result;
+      }
+      catch (const std::exception& e) {
+        throw std::invalid_argument("Failed to call the callback function: " + std::string(e.what()));
+      }
     }
 
     // Explicitly declare the destructor with the same exception specification as the base class
@@ -228,6 +237,15 @@ namespace emscripten {
       if (index_) delete index_;
     }
 
+    emscripten::val isIndexInitialized() {
+      if (index_ == nullptr) {
+        return emscripten::val(false);
+      }
+      else {
+        return emscripten::val(true);
+      }
+    }
+
     void initIndex(uint32_t max_elements) {
       if (index_) delete index_;
       index_ = new hnswlib::BruteforceSearch<float>(space_, static_cast<size_t>(max_elements));
@@ -239,12 +257,25 @@ namespace emscripten {
     }
 
     void writeIndex(const std::string& filename) {
+      if (index_ == nullptr) {
+        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
+      }
+
       if (index_) {
         index_->saveIndex(filename);
       }
     }
 
     void addPoint(const std::vector<float>& vec, uint32_t idx) {
+      if (index_ == nullptr) {
+        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
+      }
+
+      if (vec.size() != dim_) {
+        throw std::invalid_argument("Invalid vector size. Must be equal to the dimension of the space. The dimension of the space is " + std::to_string(this->dim_) + ".");
+      }
+
+
       if (normalize_) {
         std::vector<float> normalized_vec = vec;
         // Normalize the vector (omitted for brevity)
@@ -256,40 +287,44 @@ namespace emscripten {
     }
 
     void removePoint(uint32_t idx) {
+      if (index_ == nullptr) {
+        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
+      }
+
       index_->removePoint(static_cast<hnswlib::labeltype>(idx));
     }
 
-    emscripten::val searchKnn(const std::vector<float>& query_vec, uint32_t k, emscripten::val js_filterFn = emscripten::val::undefined()) {
+    emscripten::val searchKnn(const std::vector<float>& vec, uint32_t k, emscripten::val js_filterFn = emscripten::val::undefined()) {
       {
         if (index_ == nullptr) {
           throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
         }
 
-        if (query_vec.size() != dim_) {
-          throw std::runtime_error("Invalid the given array length (expected " + std::to_string(dim_) + ", but got " +
-            std::to_string(query_vec.size()) + ").");
+        if (vec.size() != dim_) {
+          throw std::invalid_argument("Invalid the given array length (expected " + std::to_string(dim_) + ", but got " +
+            std::to_string(vec.size()) + ").");
         }
 
         if (k > index_->maxelements_) {
-          throw std::runtime_error("Invalid the number of k-nearest neighbors (cannot be given a value greater than `maxElements`: " +
+          throw std::invalid_argument("Invalid the number of k-nearest neighbors (cannot be given a value greater than `maxElements`: " +
             std::to_string(index_->maxelements_) + ").");
         }
         if (k <= 0) {
-          throw std::runtime_error("Invalid the number of k-nearest neighbors (must be a positive number).");
+          throw std::invalid_argument("Invalid the number of k-nearest neighbors (must be a positive number).");
         }
 
-        std::vector<float> vec(dim_, 0.0);
-        std::copy(query_vec.begin(), query_vec.end(), vec.begin());
+        // std::vector<float> vec(dim_, 0.0);
+        // std::copy(query_vec.begin(), query_vec.end(), vec.begin());
 
         if (normalize_) normalizePoint(vec);
 
-        hnswlib::BaseFilterFunctor* filterFn = nullptr;
+        hnswlib::BaseFilterFunctor* filterFnCpp = nullptr;
         if (!js_filterFn.isUndefined() && !js_filterFn.isNull()) {
-          filterFn = new CustomFilterFunctor(js_filterFn);
+          filterFnCpp = new CustomFilterFunctor(js_filterFn);
         }
 
         std::priority_queue<std::pair<float, size_t>> knn =
-          index_->searchKnn(reinterpret_cast<void*>(vec.data()), static_cast<size_t>(k), filterFn);
+          index_->searchKnn(reinterpret_cast<void*>(const_cast<float*>(vec.data())), static_cast<size_t>(k), filterFnCpp);
         const size_t n_results = knn.size();
         emscripten::val arr_distances = emscripten::val::array();
         emscripten::val arr_neighbors = emscripten::val::array();
@@ -300,8 +335,8 @@ namespace emscripten {
           knn.pop();
         }
 
-        if (filterFn) {
-          delete filterFn;
+        if (filterFnCpp) {
+          delete filterFnCpp;
         }
 
         emscripten::val results = emscripten::val::object();
@@ -312,11 +347,19 @@ namespace emscripten {
     }
 
     uint32_t getMaxElements() {
+      if (index_ == nullptr) {
+        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
+      }
+
       if (index_ == nullptr) return 0;
       return index_->maxelements_;
     }
 
     uint32_t getCurrentCount() {
+      if (index_ == nullptr) {
+        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
+      }
+
       if (index_ == nullptr) return 0;
       return index_->cur_element_count;
     }
@@ -462,13 +505,22 @@ namespace emscripten {
         normalize_ = true;
       }
       else {
-        throw std::runtime_error("invalid space should be expected l2, ip, or cosine, name: " + space_name);
+        throw std::invalid_argument("invalid space should be expected l2, ip, or cosine, name: " + space_name);
       }
     }
 
     ~HierarchicalNSW() {
       if (space_) delete space_;
       if (index_) delete index_;
+    }
+
+    emscripten::val isIndexInitialized() {
+      if (index_ == nullptr) {
+        return emscripten::val(false);
+      }
+      else {
+        return emscripten::val(true);
+      }
     }
 
     void initIndex(uint32_t max_elements, uint32_t m = 16, uint32_t ef_construction = 200, uint32_t random_seed = 100,
@@ -485,7 +537,7 @@ namespace emscripten {
 
     void writeIndex(const std::string& filename) {
       if (index_ == nullptr) {
-        throw std::runtime_error("Search index is not constructed.");
+        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
       index_->saveIndex(filename);
     }
@@ -497,11 +549,33 @@ namespace emscripten {
       index_->resizeIndex(static_cast<size_t>(new_max_elements));
     }
 
+    val getPoint(uint32_t label) {
+
+      if (index_ == nullptr) {
+        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
+      }
+
+      try {
+        std::vector<float> vec = index_->getDataByLabel<float>(static_cast<size_t>(label));
+        val point = val::array();
+        for (size_t i = 0; i < vec.size(); i++) point.set(i, vec[i]);
+        return point;
+      }
+      catch (const std::runtime_error& e) {
+        throw std::runtime_error("Hnswlib Error: " + std::string(e.what()));
+      }
+    }
+
 
     void addPoint(const std::vector<float>& vec, uint32_t idx, bool replace_deleted = false) {
       if (index_ == nullptr) {
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
+
+      if (vec.size() != dim_) {
+        throw std::invalid_argument("Invalid vector size. Must be equal to the dimension of the space. The dimension of the space is " + std::to_string(this->dim_) + ".");
+      }
+
       std::vector<float> vec_copy(vec);
       if (normalize_) normalizePoint(vec_copy);
 
@@ -543,29 +617,33 @@ namespace emscripten {
       index_->unmarkDelete(static_cast<hnswlib::labeltype>(idx));
     }
 
-    emscripten::val searchKnn(const emscripten::val& arr, uint32_t k, const emscripten::val& filterFn) {
-
+    emscripten::val searchKnn(const std::vector<float>& vec, uint32_t k, emscripten::val js_filterFn = emscripten::val::undefined()) {
       if (index_ == nullptr) {
-        return emscripten::val::undefined();
+        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
 
-      if (arr["length"].as<uint32_t>() != dim_) {
-        return emscripten::val::undefined();
+      if (vec.size() != dim_) {
+        throw std::invalid_argument("Invalid the given array length (expected " + std::to_string(dim_) + ", but got " +
+          std::to_string(vec.size()) + ").");
       }
 
-      std::vector<float> vec(dim_, 0.0);
-      for (uint32_t i = 0; i < dim_; i++) {
-        vec[i] = arr[i].as<float>();
+      if (k > index_->max_elements_) {
+        throw std::invalid_argument("Invalid the number of k-nearest neighbors (cannot be given a value greater than `maxElements`: " +
+          std::to_string(index_->max_elements_) + ").");
+      }
+      if (k <= 0) {
+        throw std::invalid_argument("Invalid the number of k-nearest neighbors (must be a positive number).");
       }
 
       if (normalize_) normalizePoint(vec);
 
       CustomFilterFunctor* filterFnCpp = nullptr;
-      if (!filterFn.isNull() && filterFn.isUndefined()) {
-        filterFnCpp = new CustomFilterFunctor(filterFn);
+      if (!js_filterFn.isNull() && !js_filterFn.isUndefined()) {
+        filterFnCpp = new CustomFilterFunctor(js_filterFn);
       }
 
-      auto knn = index_->searchKnn(reinterpret_cast<void*>(vec.data()), static_cast<size_t>(k), filterFnCpp);
+      std::priority_queue<std::pair<float, size_t>> knn =
+        index_->searchKnn(reinterpret_cast<void*>(const_cast<float*>(vec.data())), static_cast<size_t>(k), filterFnCpp);
       const size_t n_results = knn.size();
       emscripten::val distances = emscripten::val::array();
       emscripten::val neighbors = emscripten::val::array();
@@ -586,6 +664,9 @@ namespace emscripten {
     }
 
     uint32_t getCurrentCount() const {
+      if (index_ == nullptr) {
+        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
+      }
       return index_ == nullptr ? 0 : static_cast<uint32_t>(index_->cur_element_count);
     }
 
@@ -594,10 +675,17 @@ namespace emscripten {
     }
 
     uint32_t getEf() const {
+      if (index_ == nullptr) {
+        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
+      }
       return index_ == nullptr ? 0 : index_->ef_;
     }
 
     void setEf(uint32_t ef) {
+      if (index_ == nullptr) {
+        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
+      }
+
       if (index_ != nullptr) {
         index_->setEf(static_cast<size_t>(ef));
       }
@@ -640,6 +728,7 @@ namespace emscripten {
     emscripten::class_<BruteforceSearch>("BruteforceSearch")
       .constructor<std::string, uint32_t>()
       .function("initIndex", &BruteforceSearch::initIndex)
+      .function("isIndexInitialized", &BruteforceSearch::isIndexInitialized)
       .function("readIndex", &BruteforceSearch::readIndex)
       .function("writeIndex", &BruteforceSearch::writeIndex)
       .function("addPoint", &BruteforceSearch::addPoint)
@@ -668,9 +757,11 @@ namespace emscripten {
     emscripten::class_<HierarchicalNSW>("HierarchicalNSW")
       .constructor<const std::string&, uint32_t>()
       .function("initIndex", &HierarchicalNSW::initIndex)
+      .function("isIndexInitialized", &HierarchicalNSW::isIndexInitialized)
       .function("readIndex", &HierarchicalNSW::readIndex)
       .function("writeIndex", &HierarchicalNSW::writeIndex)
       .function("resizeIndex", &HierarchicalNSW::resizeIndex)
+      .function("getPoint", &HierarchicalNSW::getPoint)
       .function("addPoint", &HierarchicalNSW::addPoint)
       .function("getMaxElements", &HierarchicalNSW::getMaxElements)
       .function("getIdsList", &HierarchicalNSW::getIdsList)
@@ -680,6 +771,7 @@ namespace emscripten {
       .function("getNumDimensions", &HierarchicalNSW::getNumDimensions)
       .function("getEf", &HierarchicalNSW::getEf)
       .function("setEf", &HierarchicalNSW::setEf)
+      .function("searchKnn", &HierarchicalNSW::searchKnn, allow_raw_pointers())
       ;
 
 

@@ -27,5 +27,9 @@ const jestConfig: JestConfigWithTsJest = {
 }
 
 console.warn("----------------------------------------");
+console.warn("----------------------------------------");
+console.warn("              NEW TEST RUN");
+console.warn("----------------------------------------");
+console.warn("----------------------------------------");
 
 export default jestConfig

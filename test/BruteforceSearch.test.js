@@ -51,7 +51,7 @@ describe("BruteforceSearch", () => {
     });
 
     it("returns maximum number of elements", () => {
-      index.initIndex(10);
+      index.initIndex(10, ...defaultParams.initIndex);
       expect(index.getMaxElements()).toBe(10);
     });
   });
@@ -64,9 +64,9 @@ describe("BruteforceSearch", () => {
     });
 
     it("returns current number of elements", () => {
-      index.initIndex(5);
-      index.addPoint([1, 2, 3], 0);
-      index.addPoint([2, 3, 4], 1);
+      index.initIndex(5, ...defaultParams.initIndex);
+      index.addPoint([1, 2, 3], 0, ...defaultParams.addPoint);
+      index.addPoint([2, 3, 4], 1, ...defaultParams.addPoint);
       expect(index.getCurrentCount()).toBe(2);
     });
   });
@@ -102,24 +102,24 @@ describe("BruteforceSearch", () => {
 
     it("throws an error if called before the index is initialized", () => {
       expect(() => {
-        index.addPoint([1, 2, 3], 0);
+        index.addPoint([1, 2, 3], 0, ...defaultParams.addPoint);
       }).toThrow(
         "Search index has not been initialized, call `initIndex` in advance."
       );
     });
 
     it("throws an error if given an array with a length different from the number of dimensions", () => {
-      index.initIndex(1);
+      index.initIndex(1, ...defaultParams.initIndex);
       expect(() => {
-        index.addPoint([1, 2, 3, 4, 5], 0);
+        index.addPoint([1, 2, 3, 4, 5], 0, ...defaultParams.addPoint);
       }).toThrow("Invalid the given array length (expected 3, but got 5).");
     });
 
     it("throws an error if more element is added than the maximum number of elements.", () => {
-      index.initIndex(1);
-      index.addPoint([1, 2, 3], 0);
+      index.initIndex(1, ...defaultParams.initIndex);
+      index.addPoint([1, 2, 3], 0, ...defaultParams.addPoint);
       expect(() => {
-        index.addPoint([1, 2, 3], 1);
+        index.addPoint([1, 2, 3], 1, ...defaultParams.addPoint);
       }).toThrow(/Hnswlib Error/);
     });
   });
@@ -148,9 +148,9 @@ describe("BruteforceSearch", () => {
     });
 
     it("removes the element specified by index", () => {
-      index.initIndex(2);
-      index.addPoint([1, 2, 3], 0);
-      index.addPoint([1, 2, 4], 1);
+      index.initIndex(2, ...defaultParams.initIndex);
+      index.addPoint([1, 2, 3], 0, ...defaultParams.addPoint);
+      index.addPoint([1, 2, 4], 1, ...defaultParams.addPoint);
       expect(index.getCurrentCount()).toBe(2);
       index.removePoint(1);
       expect(index.getCurrentCount()).toBe(1);
@@ -163,10 +163,10 @@ describe("BruteforceSearch", () => {
       const index = new BruteforceSearch("l2", 3);
 
       beforeAll(() => {
-        index.initIndex(3);
-        index.addPoint([1, 2, 3], 0);
-        index.addPoint([2, 3, 4], 1);
-        index.addPoint([3, 4, 5], 2);
+        index.initIndex(3, ...defaultParams.initIndex);
+        index.addPoint([1, 2, 3], 0, ...defaultParams.addPoint);
+        index.addPoint([2, 3, 4], 1, ...defaultParams.addPoint);
+        index.addPoint([3, 4, 5], 2, ...defaultParams.addPoint);
       });
 
       it("throws an error if no arguments are given", () => {
@@ -219,10 +219,10 @@ describe("BruteforceSearch", () => {
       const index = new BruteforceSearch("ip", 3);
 
       beforeAll(() => {
-        index.initIndex(3);
-        index.addPoint([1, 2, 3], 0);
-        index.addPoint([2, 3, 4], 1);
-        index.addPoint([3, 4, 5], 2);
+        index.initIndex(3, ...defaultParams.initIndex);
+        index.addPoint([1, 2, 3], 0, ...defaultParams.addPoint);
+        index.addPoint([2, 3, 4], 1, ...defaultParams.addPoint);
+        index.addPoint([3, 4, 5], 2, ...defaultParams.addPoint);
       });
 
       it("returns search results based on one minus inner product", () => {
@@ -237,10 +237,10 @@ describe("BruteforceSearch", () => {
       const index = new BruteforceSearch("cosine", 3);
 
       beforeAll(() => {
-        index.initIndex(3);
-        index.addPoint([1, 2, 3], 0);
-        index.addPoint([2, 3, 4], 1);
-        index.addPoint([3, 4, 5], 2);
+        index.initIndex(3, ...defaultParams.initIndex);
+        index.addPoint([1, 2, 3], 0, ...defaultParams.addPoint);
+        index.addPoint([2, 3, 4], 1, ...defaultParams.addPoint);
+        index.addPoint([3, 4, 5], 2, ...defaultParams.addPoint);
       });
 
       it("returns search results based on one minus cosine similarity", () => {
@@ -262,11 +262,11 @@ describe("BruteforceSearch", () => {
       const filter = (label) => label % 2 == 0;
 
       beforeAll(() => {
-        index.initIndex(4);
-        index.addPoint([1, 2, 3], 0);
-        index.addPoint([1, 2, 5], 1);
-        index.addPoint([1, 2, 4], 2);
-        index.addPoint([1, 2, 5], 3);
+        index.initIndex(4, ...defaultParams.initIndex);
+        index.addPoint([1, 2, 3], 0, ...defaultParams.addPoint);
+        index.addPoint([1, 2, 5], 1, ...defaultParams.addPoint);
+        index.addPoint([1, 2, 4], 2, ...defaultParams.addPoint);
+        index.addPoint([1, 2, 5], 3, ...defaultParams.addPoint);
       });
 
       it("returns filtered search results", () => {

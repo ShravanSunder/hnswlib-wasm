@@ -1,6 +1,6 @@
 import { loadHnswlib } from "./loadHnswlib";
 import hnswlib, { HnswlibModule, InnerProductSpace, L2Space } from "~lib/hnswlib";
-import { testErrors} from "./errors";
+import { testErrors} from "./testErrors";
 
 describe("InnerProductSpace", () => {
   let hnswlib: HnswlibModule;

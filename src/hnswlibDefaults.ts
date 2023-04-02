@@ -9,7 +9,7 @@ export const defaultParams = {
    */
     initIndex: [16, 200, 100, false],
     /**
-     * @param {boolean} replaceDeleted — The flag to replace a deleted element 
+     * @param {boolean} replaceDeleted — The flag to replace a deleted element (default: false)
      */
     addPoint: [false],
   } as const;

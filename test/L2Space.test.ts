@@ -1,4 +1,4 @@
-import { testErrors } from "./errors";
+import { testErrors } from "./testErrors";
 import { HnswlibModule, L2Space } from "~lib/hnswlib";
 import { loadHnswlib } from "./loadHnswlib";
 
