@@ -3,6 +3,8 @@
   "files.associations": {
     "*.excalidraw": "json",
     "*.excalidrawlib": "json",
-    "stdexcept": "cpp"
+    "stdexcept": "cpp",
+    "exception": "cpp",
+    "numeric": "cpp"
   }
 }
