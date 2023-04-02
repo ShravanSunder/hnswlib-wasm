@@ -1,62 +1,97 @@
-const { HierarchicalNSW } = require("../lib/hnswlib");
+import { loadHnswlib } from "./loadHnswlib";
+import {  HierarchicalNSW, HnswlibModule, InnerProductSpace, L2Space } from "~lib/hnswlib";
+import { argumentCountError, intArgumentError, vectorArgumentError, vectorSizeError } from "./errors";
 
-describe("HierarchicalNSW", () => {
+
+describe("hnswlib.HierarchicalNSW", () => {
+  let hnswlib: HnswlibModule;
+  let index: HierarchicalNSW;
+
+  beforeAll(async () => {
+    // Instantiate the Emscripten module
+    hnswlib = await loadHnswlib();
+    index = new hnswlib.HierarchicalNSW("l2", 3);
+  });
+
+  it("loads the class", () => {
+    expect(hnswlib.HierarchicalNSW).toBeDefined();
+  });
+  
   describe("#constructor", () => {
     it("throws an error if no arguments are given", () => {
       expect(() => {
-        new HierarchicalNSW();
-      }).toThrow("Expected 2 arguments, but got 0.");
+        // @ts-expect-error
+        new hnswlib.HierarchicalNSW();
+      }).toThrow("Tried to invoke ctor of HierarchicalNSW with invalid number of parameters (0) - expected (2) parameters instead!");
     });
 
     it("throws an error if given a non-String object to first argument", () => {
       expect(() => {
-        new HierarchicalNSW(1, 3);
-      }).toThrow("Invalid the first argument type, must be a string.");
+        // @ts-expect-error
+        new hnswlib.HierarchicalNSW(1, 3);
+      }).toThrow("Cannot pass non-string to std::string");
     });
 
     it("throws an error if given a non-Number object to second argument", () => {
       expect(() => {
-        new HierarchicalNSW("l2", "3");
-      }).toThrow("Invalid the second argument type, must be a number.");
+        // @ts-expect-error
+        new hnswlib.HierarchicalNSW("l2", "3");
+      }).toThrow(intArgumentError);
     });
 
     it('throws an error if given a String that is neither "l2", "ip", nor "cosine" to first argument', () => {
       expect(() => {
-        new HierarchicalNSW("cos", 3);
-      }).toThrow('Wrong space name, expected "l2", "ip", or "cosine".');
+        // @ts-expect-error
+        new hnswlib.HierarchicalNSW("coss", 3);
+      }).toThrow('invalid space should be expected l2, ip, or cosine');
     });
   });
 
   describe("#initIndex", () => {
-    const index = new HierarchicalNSW("l2", 3);
+    beforeAll(() => {
+      index = new hnswlib.HierarchicalNSW("l2", 3);
+    });
 
     it("throws an error if no arguments are given", () => {
       expect(() => {
+        // @ts-expect-error
         index.initIndex();
       }).toThrow("Expected 1-5 arguments, but got 0.");
     });
 
     it("throws an error if given a non-Number argument", () => {
       expect(() => {
+        // @ts-expect-error
         index.initIndex("5");
       }).toThrow("Invalid the first argument type, must be a number.");
     });
 
     it("throws an error if given a non-boolean object to fifth argument", () => {
       expect(() => {
+        // @ts-expect-error
         index.initIndex(5, 16, 200, 1, 1);
       }).toThrow("Invalid the fifth argument type, must be a boolean.");
     });
 
     it("throws an error if empty object are given", () => {
       expect(() => {
+        // @ts-expect-error
         index.initIndex({});
-      }).toThrow("Missing named argument `maxElements`, must be specified.");
+      }).toThrow(/called with 1 arguments, expected 2 args!/);
     });
 
     it("throws an error if given a non-Number to maxElements option", () => {
       expect(() => {
-        index.initIndex({ maxElements: "5" });
+        // @ts-expect-error
+        index.initIndex("5" );
+      }).toThrow(
+        "Invalid the named argument type `maxElements`, must be a number."
+      );
+    });
+
+    it("throws an error if given a non-Number to maxElements option", () => {
+      expect(() => {
+        index.initIndex(5);
       }).toThrow(
         "Invalid the named argument type `maxElements`, must be a number."
       );
@@ -64,17 +99,22 @@ describe("HierarchicalNSW", () => {
   });
 
   describe("#resizeIndex", () => {
-    const index = new HierarchicalNSW("l2", 3);
+    beforeAll(() => {
+      index = new hnswlib.HierarchicalNSW("l2", 3);
+    });
 
     it("throws an error if no arguments are given", () => {
       expect(() => {
+        // @ts-expect-error
         index.resizeIndex();
-      }).toThrow("Expected 1 arguments, but got 0.");
+      }).toThrow(argumentCountError);
     });
 
     it("throws an error if given a non-Number argument", () => {
       expect(() => {
+        // @ts-expect-error
         index.resizeIndex("0");
+        
       }).toThrow("Invalid the first argument type, must be a number.");
     });
 
@@ -100,7 +140,9 @@ describe("HierarchicalNSW", () => {
   });
 
   describe("#getIdsList", () => {
-    const index = new HierarchicalNSW("l2", 3);
+    beforeAll(() => {
+      index = new hnswlib.HierarchicalNSW("l2", 3);
+    });
 
     it("returns an empty array if called before the index is initialized", () => {
       expect(index.getIdsList()).toMatchObject([]);
@@ -115,7 +157,9 @@ describe("HierarchicalNSW", () => {
   });
 
   describe("#getPoint", () => {
-    const index = new HierarchicalNSW("l2", 3);
+    beforeAll(() => {
+      index = new hnswlib.HierarchicalNSW("l2", 3);
+    });
 
     describe("when the index is not initialized", () => {
       it("returns an empty array if called before the index is initialized", () => {
@@ -133,12 +177,14 @@ describe("HierarchicalNSW", () => {
 
       it("throws an error if no arguments are given", () => {
         expect(() => {
+          // @ts-expect-error
           index.getPoint();
         }).toThrow("Expected 1 arguments, but got 0.");
       });
 
       it("throws an error if given a non-Number argument", () => {
         expect(() => {
+          // @ts-expect-error
           index.getPoint("0");
         }).toThrow("Invalid the first argument type, must be a number.");
       });
@@ -164,7 +210,9 @@ describe("HierarchicalNSW", () => {
   });
 
   describe("#getMaxElements", () => {
-    const index = new HierarchicalNSW("l2", 3);
+    beforeAll(() => {
+      index = new hnswlib.HierarchicalNSW("l2", 3);
+    });
 
     it("returns 0 if called before the index is initialized", () => {
       expect(index.getMaxElements()).toBe(0);
@@ -177,7 +225,9 @@ describe("HierarchicalNSW", () => {
   });
 
   describe("#getCurrentCount", () => {
-    const index = new HierarchicalNSW("l2", 3);
+    beforeAll(() => {
+      index = new hnswlib.HierarchicalNSW("l2", 3);
+    });
 
     it("returns 0 if called before the index is initialized", () => {
       expect(index.getCurrentCount()).toBe(0);
@@ -192,7 +242,9 @@ describe("HierarchicalNSW", () => {
   });
 
   describe("#getNumDimensions", () => {
-    const index = new HierarchicalNSW("l2", 3);
+    beforeAll(() => {
+      index = new hnswlib.HierarchicalNSW("l2", 3);
+    });
 
     it("returns number of dimensions", () => {
       expect(index.getNumDimensions()).toBe(3);
@@ -200,7 +252,9 @@ describe("HierarchicalNSW", () => {
   });
 
   describe("#getEf", () => {
-    const index = new HierarchicalNSW("l2", 3);
+    beforeAll(() => {
+      index = new hnswlib.HierarchicalNSW("l2", 3);
+    });
 
     it("throws an error if called before the index is initialized", () => {
       expect(() => {
@@ -217,16 +271,20 @@ describe("HierarchicalNSW", () => {
   });
 
   describe("#setEf", () => {
-    const index = new HierarchicalNSW("l2", 3);
+    beforeAll(() => {
+      index = new hnswlib.HierarchicalNSW("l2", 3);
+    });
 
     it("throws an error if no arguments are given", () => {
       expect(() => {
+        // @ts-expect-error
         index.setEf();
       }).toThrow("Expected 1 arguments, but got 0.");
     });
 
     it("throws an error if given a non-Number argument", () => {
       expect(() => {
+        // @ts-expect-error
         index.setEf("0");
       }).toThrow("Invalid the first argument type, must be a number.");
     });
@@ -247,22 +305,27 @@ describe("HierarchicalNSW", () => {
   });
 
   describe("#addPoint", () => {
-    const index = new HierarchicalNSW("l2", 3);
+    beforeAll(() => {
+      index = new hnswlib.HierarchicalNSW("l2", 3);
+    });
 
     it("throws an error if no arguments are given", () => {
       expect(() => {
+        // @ts-expect-error
         index.addPoint();
       }).toThrow("Expected 2-3 arguments, but got 0.");
     });
 
     it("throws an error if given a non-Array object to first argument", () => {
       expect(() => {
+        // @ts-expect-error
         index.addPoint("[1, 2, 3]", 0);
       }).toThrow("Invalid the first argument type, must be an Array.");
     });
 
     it("throws an error if given a non-Number object to second argument", () => {
       expect(() => {
+        // @ts-expect-error
         index.addPoint([1, 2, 3], "0");
       }).toThrow("Invalid the second argument type, must be a number.");
     });
@@ -292,16 +355,20 @@ describe("HierarchicalNSW", () => {
   });
 
   describe("#markDelete", () => {
-    const index = new HierarchicalNSW("l2", 3);
+    beforeAll(() => {
+      index = new hnswlib.HierarchicalNSW("l2", 3);
+    });
 
     it("throws an error if no arguments are given", () => {
       expect(() => {
+        // @ts-expect-error
         index.markDelete();
       }).toThrow("Expected 1 arguments, but got 0.");
     });
 
     it("throws an error if given a non-Number argument", () => {
       expect(() => {
+        // @ts-expect-error
         index.markDelete("0");
       }).toThrow("Invalid the first argument type, must be a number.");
     });
@@ -324,16 +391,20 @@ describe("HierarchicalNSW", () => {
   });
 
   describe("#unmarkDelete", () => {
-    const index = new HierarchicalNSW("l2", 3);
+    beforeAll(() => {
+      index = new hnswlib.HierarchicalNSW("l2", 3);
+    });
 
     it("throws an error if no arguments are given", () => {
       expect(() => {
+        // @ts-expect-error
         index.unmarkDelete();
       }).toThrow("Expected 1 arguments, but got 0.");
     });
 
     it("throws an error if given a non-Number argument", () => {
       expect(() => {
+        // @ts-expect-error
         index.unmarkDelete("0");
       }).toThrow("Invalid the first argument type, must be a number.");
     });
@@ -359,7 +430,9 @@ describe("HierarchicalNSW", () => {
 
   describe("#searchKnn", () => {
     describe('when metric space is "l2"', () => {
-      const index = new HierarchicalNSW("l2", 3);
+      beforeAll(() => {
+      index = new hnswlib.HierarchicalNSW("l2", 3);
+    });
 
       beforeAll(() => {
         index.initIndex(3);
@@ -370,24 +443,28 @@ describe("HierarchicalNSW", () => {
 
       it("throws an error if no arguments are given", () => {
         expect(() => {
+          // @ts-expect-error
           index.searchKnn();
         }).toThrow("Expected 2-3 arguments, but got 0.");
       });
 
       it("throws an error if given a non-Array object to first argument", () => {
         expect(() => {
+          // @ts-expect-error
           index.searchKnn("[1, 2, 3]", 2);
         }).toThrow("Invalid the first argument type, must be an Array.");
       });
 
       it("throws an error if given a non-Number object to second argument", () => {
         expect(() => {
+          // @ts-expect-error
           index.searchKnn([1, 2, 3], "2");
         }).toThrow("Invalid the second argument type, must be a number.");
       });
 
       it("throws an error if given a non-Function to third argument", () => {
         expect(() => {
+          // @ts-expect-error
           index.searchKnn([1, 2, 3], 2, "fnc");
         }).toThrow("Invalid the third argument type, must be a function.");
       });
@@ -415,7 +492,10 @@ describe("HierarchicalNSW", () => {
     });
 
     describe('when metric space is "ip"', () => {
-      const index = new HierarchicalNSW("ip", 3);
+      beforeAll(() => {
+        index = new hnswlib.HierarchicalNSW("ip", 3);
+      });
+      
 
       beforeAll(() => {
         index.initIndex(3);
@@ -433,7 +513,9 @@ describe("HierarchicalNSW", () => {
     });
 
     describe('when metric space is "cosine"', () => {
-      const index = new HierarchicalNSW("cosine", 3);
+      beforeAll(() => {
+        index = new hnswlib.HierarchicalNSW("cosine", 3);
+      });
 
       beforeAll(() => {
         index.initIndex(3);
@@ -443,7 +525,7 @@ describe("HierarchicalNSW", () => {
       });
 
       it("returns search results based on one minus cosine similarity", () => {
-        res = index.searchKnn([1, 2, 5], 2);
+        const res = index.searchKnn([1, 2, 5], 2);
         expect(res.neighbors).toMatchObject([0, 1]);
         expect(res.distances[0]).toBeCloseTo(
           1.0 - 20.0 / (Math.sqrt(14) * Math.sqrt(30)),
@@ -457,8 +539,10 @@ describe("HierarchicalNSW", () => {
     });
 
     describe("when filter function is given", () => {
-      const index = new HierarchicalNSW("l2", 3);
-      const filter = (label) => label % 2 == 0;
+      beforeAll(() => {
+      index = new hnswlib.HierarchicalNSW("l2", 3);
+    });
+      const filter = (label:number) => label % 2 == 0;
 
       beforeAll(() => {
         index.initIndex(4);

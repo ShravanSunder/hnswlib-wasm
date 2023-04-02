@@ -20,5 +20,6 @@
       "~test/*": ["./test/*"],
     }
   },
-  "include": ["lib/**/*.ts", "lib/**/*.d.ts", "src/**/*.ts", "test/**/*"]
+  "include": ["lib/**/*.ts", "lib/**/*.d.ts", "src/**/*.ts", "test/**/*"],
+  "files": ["node_modules/jest-extended/types/index.d.ts"]
 }

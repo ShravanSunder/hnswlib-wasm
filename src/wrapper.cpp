@@ -452,9 +452,12 @@ namespace emscripten {
       else if (space_name == "ip") {
         space_ = new hnswlib::InnerProductSpace(static_cast<size_t>(dim_));
       }
-      else {
+      else if (space_name == "cosine") {
         space_ = new hnswlib::InnerProductSpace(static_cast<size_t>(dim_));
         normalize_ = true;
+      }
+      else {
+        throw std::runtime_error("invalid space should be expected l2, ip, or cosine, name: " + space_name);
       }
     }
 
@@ -462,7 +465,6 @@ namespace emscripten {
       if (space_) delete space_;
       if (index_) delete index_;
     }
-
 
     void initIndex(uint32_t max_elements, uint32_t m = 16, uint32_t ef_construction = 200, uint32_t random_seed = 100,
       bool allow_replace_deleted = false) {
@@ -636,6 +638,8 @@ namespace emscripten {
       .function("execute", &SaveHierarchicalNSWIndexWorker::Execute)
       .function("getResult", &SaveHierarchicalNSWIndexWorker::GetResult)
       .function("getError", &SaveHierarchicalNSWIndexWorker::GetError);
+
+
 
     emscripten::class_<HierarchicalNSW>("HierarchicalNSW")
       .constructor<const std::string&, uint32_t>()

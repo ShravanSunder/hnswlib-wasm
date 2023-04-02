@@ -1,6 +1,6 @@
 import { loadHnswlib } from "./loadHnswlib";
 import hnswlib, { HnswlibModule, InnerProductSpace, L2Space } from "~lib/hnswlib";
-import { dimensionError, vectorArgumentError, vectorSizeError } from "./errors";
+import { intArgumentError, vectorArgumentError, vectorSizeError } from "./errors";
 
 describe("InnerProductSpace", () => {
   let hnswlib: HnswlibModule;
@@ -23,7 +23,7 @@ describe("InnerProductSpace", () => {
     expect(() => {
       //@ts-expect-error
       new hnswlib.InnerProductSpace("yes");
-    }).toThrow(dimensionError);
+    }).toThrow(intArgumentError);
   });
   
 

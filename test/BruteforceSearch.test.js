@@ -11,7 +11,7 @@ describe("BruteforceSearch", () => {
     it("throws an error if given a non-String object to first argument", () => {
       expect(() => {
         new BruteforceSearch(1, 3);
-      }).toThrow("Invalid the first argument type, must be a string.");
+      }).toThrow("Cannot pass non-string to std::string");
     });
 
     it("throws an error if given a non-Number object to second argument", () => {

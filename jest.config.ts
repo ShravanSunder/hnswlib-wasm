@@ -26,4 +26,6 @@ const jestConfig: JestConfigWithTsJest = {
   },
 }
 
+console.warn("----------------------------------------");
+
 export default jestConfig

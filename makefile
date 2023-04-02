@@ -41,7 +41,7 @@ all: $(OUTPUT)
 $(OUTPUT): $(SOURCES)
 		mkdir -p lib
 		$(CC) $(CFLAGS) $(LDFLAGS) $(SOURCES) -o $(OUTPUT)
-		cp ./src/hnswlib.d.ts ./lib/hnswlib.d.ts
+		cp ./src/*.ts ./lib
 
 
 # Add a `clean` target to remove generated files from the 'lib' directory.
