@@ -49,10 +49,26 @@ namespace emscripten {
       static constexpr TYPEID get() { return TypeID<val>::get(); }
     };
 
+    /// @brief This function normalizes the point in place, but cheats and uses the same input parameter vector.  It is set as const due to bindings
+    /// @param vec 
+    void normalizePoint(const std::vector<float>& vec) {
+      try {
+        std::vector<float>& result = const_cast<std::vector<float>&>(vec);
+        const size_t dim = result.size();
+        const float norm = std::sqrt(std::fabs(std::inner_product(result.begin(), result.end(), result.begin(), 0.0f)));
+        if (norm > 0.0f) {
+          for (size_t i = 0; i < dim; i++) result[i] /= norm;
+        }
+      }
+      catch (const std::exception& e) {
+        throw std::runtime_error("Failed to normalize the point, check vector dimensions: " + std::string(e.what()));
+      }
+    }
+
   }  // namespace internal
 
 
-  std::vector<float> normalizePoint(const std::vector<float>& vec) {
+  std::vector<float> normalizePointPure(const std::vector<float>& vec) {
     try {
       std::vector<float> result(vec);
       const size_t dim = result.size();
@@ -66,6 +82,9 @@ namespace emscripten {
       throw std::runtime_error("Failed to normalize the point, check vector dimensions: " + std::string(e.what()));
     }
   }
+
+
+
 
 
 
@@ -275,15 +294,15 @@ namespace emscripten {
         throw std::invalid_argument("Invalid vector size. Must be equal to the dimension of the space. The dimension of the space is " + std::to_string(this->dim_) + ".");
       }
 
+      std::vector<float>& mutableVec = const_cast<std::vector<float>&>(vec);
 
       if (normalize_) {
-        std::vector<float> normalized_vec = vec;
-        // Normalize the vector (omitted for brevity)
-        index_->addPoint(reinterpret_cast<void*>(normalized_vec.data()), static_cast<hnswlib::labeltype>(idx));
+        internal::normalizePoint(mutableVec);
       }
-      else {
-        index_->addPoint(reinterpret_cast<void*>(const_cast<float*>(vec.data())), static_cast<hnswlib::labeltype>(idx));
-      }
+
+
+      index_->addPoint(reinterpret_cast<void*>(const_cast<float*>(mutableVec.data())), static_cast<hnswlib::labeltype>(idx));
+
     }
 
     void removePoint(uint32_t idx) {
@@ -295,55 +314,56 @@ namespace emscripten {
     }
 
     emscripten::val searchKnn(const std::vector<float>& vec, uint32_t k, emscripten::val js_filterFn = emscripten::val::undefined()) {
-      {
-        if (index_ == nullptr) {
-          throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
-        }
 
-        if (vec.size() != dim_) {
-          throw std::invalid_argument("Invalid the given array length (expected " + std::to_string(dim_) + ", but got " +
-            std::to_string(vec.size()) + ").");
-        }
-
-        if (k > index_->maxelements_) {
-          throw std::invalid_argument("Invalid the number of k-nearest neighbors (cannot be given a value greater than `maxElements`: " +
-            std::to_string(index_->maxelements_) + ").");
-        }
-        if (k <= 0) {
-          throw std::invalid_argument("Invalid the number of k-nearest neighbors (must be a positive number).");
-        }
-
-        // std::vector<float> vec(dim_, 0.0);
-        // std::copy(query_vec.begin(), query_vec.end(), vec.begin());
-
-        if (normalize_) normalizePoint(vec);
-
-        hnswlib::BaseFilterFunctor* filterFnCpp = nullptr;
-        if (!js_filterFn.isUndefined() && !js_filterFn.isNull()) {
-          filterFnCpp = new CustomFilterFunctor(js_filterFn);
-        }
-
-        std::priority_queue<std::pair<float, size_t>> knn =
-          index_->searchKnn(reinterpret_cast<void*>(const_cast<float*>(vec.data())), static_cast<size_t>(k), filterFnCpp);
-        const size_t n_results = knn.size();
-        emscripten::val arr_distances = emscripten::val::array();
-        emscripten::val arr_neighbors = emscripten::val::array();
-        for (int32_t i = static_cast<int32_t>(n_results) - 1; i >= 0; i--) {
-          const std::pair<float, size_t>& nn = knn.top();
-          arr_distances.set(i, nn.first);
-          arr_neighbors.set(i, nn.second);
-          knn.pop();
-        }
-
-        if (filterFnCpp) {
-          delete filterFnCpp;
-        }
-
-        emscripten::val results = emscripten::val::object();
-        results.set("distances", arr_distances);
-        results.set("neighbors", arr_neighbors);
-        return results;
+      if (index_ == nullptr) {
+        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
+
+      if (vec.size() != dim_) {
+        throw std::invalid_argument("Invalid the given array length (expected " + std::to_string(dim_) + ", but got " +
+          std::to_string(vec.size()) + ").");
+      }
+
+      if (k > index_->maxelements_) {
+        throw std::invalid_argument("Invalid the number of k-nearest neighbors (cannot be given a value greater than `maxElements`: " +
+          std::to_string(index_->maxelements_) + ").");
+      }
+      if (k <= 0) {
+        throw std::invalid_argument("Invalid the number of k-nearest neighbors (must be a positive number).");
+      }
+
+      CustomFilterFunctor* filterFnCpp = nullptr;
+      if (!js_filterFn.isNull() && !js_filterFn.isUndefined()) {
+        filterFnCpp = new CustomFilterFunctor(js_filterFn);
+      }
+
+      std::vector<float>& mutableVec = const_cast<std::vector<float>&>(vec);
+
+      if (normalize_) {
+        internal::normalizePoint(mutableVec);
+      }
+
+      std::priority_queue<std::pair<float, size_t>> knn =
+        index_->searchKnn(reinterpret_cast<void*>(const_cast<float*>(mutableVec.data())), static_cast<size_t>(k), filterFnCpp);
+      const size_t n_results = knn.size();
+      emscripten::val distances = emscripten::val::array();
+      emscripten::val neighbors = emscripten::val::array();
+
+      // Reverse the loop order
+      for (int32_t i = static_cast<int32_t>(n_results) - 1; i >= 0; i--) {
+        auto nn = knn.top();
+        distances.set(i, nn.first);
+        neighbors.set(i, nn.second);
+        knn.pop();
+      }
+
+      if (filterFnCpp) delete filterFnCpp;
+
+      emscripten::val results = emscripten::val::object();
+      results.set("distances", distances);
+      results.set("neighbors", neighbors);
+
+      return results;
     }
 
     uint32_t getMaxElements() {
@@ -550,7 +570,6 @@ namespace emscripten {
     }
 
     val getPoint(uint32_t label) {
-
       if (index_ == nullptr) {
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
@@ -576,11 +595,14 @@ namespace emscripten {
         throw std::invalid_argument("Invalid vector size. Must be equal to the dimension of the space. The dimension of the space is " + std::to_string(this->dim_) + ".");
       }
 
-      std::vector<float> vec_copy(vec);
-      if (normalize_) normalizePoint(vec_copy);
+      std::vector<float>& mutableVec = const_cast<std::vector<float>&>(vec);
+
+      if (normalize_) {
+        internal::normalizePoint(mutableVec);
+      }
 
       try {
-        index_->addPoint(reinterpret_cast<void*>(vec_copy.data()), static_cast<hnswlib::labeltype>(idx), replace_deleted);
+        index_->addPoint(reinterpret_cast<void*>(mutableVec.data()), static_cast<hnswlib::labeltype>(idx), replace_deleted);
       }
       catch (const std::exception& e) {
         throw std::runtime_error("Hnswlib Error: " + std::string(e.what()));
@@ -635,19 +657,25 @@ namespace emscripten {
         throw std::invalid_argument("Invalid the number of k-nearest neighbors (must be a positive number).");
       }
 
-      if (normalize_) normalizePoint(vec);
-
       CustomFilterFunctor* filterFnCpp = nullptr;
       if (!js_filterFn.isNull() && !js_filterFn.isUndefined()) {
         filterFnCpp = new CustomFilterFunctor(js_filterFn);
       }
 
+
+      std::vector<float>& mutableVec = const_cast<std::vector<float>&>(vec);
+      if (normalize_) {
+        internal::normalizePoint(mutableVec);
+      }
+
       std::priority_queue<std::pair<float, size_t>> knn =
-        index_->searchKnn(reinterpret_cast<void*>(const_cast<float*>(vec.data())), static_cast<size_t>(k), filterFnCpp);
+        index_->searchKnn(reinterpret_cast<void*>(const_cast<float*>(mutableVec.data())), static_cast<size_t>(k), filterFnCpp);
       const size_t n_results = knn.size();
       emscripten::val distances = emscripten::val::array();
       emscripten::val neighbors = emscripten::val::array();
-      for (size_t i = 0; i < n_results; i++) {
+
+      // Reverse the loop order
+      for (int32_t i = static_cast<int32_t>(n_results) - 1; i >= 0; i--) {
         auto nn = knn.top();
         distances.set(i, nn.first);
         neighbors.set(i, nn.second);
@@ -701,7 +729,7 @@ namespace emscripten {
   EMSCRIPTEN_BINDINGS(hnswlib) {
     using namespace emscripten;
 
-    function("normalizePoint", &normalizePoint);
+    function("normalizePoint", &normalizePointPure);
 
     emscripten::class_<L2Space>("L2Space")
       .constructor<uint32_t>()
