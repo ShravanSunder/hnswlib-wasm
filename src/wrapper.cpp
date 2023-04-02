@@ -153,6 +153,8 @@ private:
   hnswlib::BruteforceSearch<float>** index_;
 };
 
+/*****************/
+
 class BruteforceSearch {
 public:
   uint32_t dim_;
@@ -236,7 +238,7 @@ public:
       if (normalize_) normalizePoint(vec);
 
       hnswlib::BaseFilterFunctor* filterFn = nullptr;
-      if (!js_filterFn.isUndefined()) {
+      if (!js_filterFn.isUndefined() && !js_filterFn.isNull()) {
         filterFn = new CustomFilterFunctor(js_filterFn);
       }
 
@@ -344,6 +346,8 @@ protected:
   std::function<void()> completion_callback_;
 };
 
+
+/*****************/
 class SaveHierarchicalNSWIndexWorker: public AsyncWorkerBase {
 public:
   SaveHierarchicalNSWIndexWorker(const std::string& filename, hnswlib::HierarchicalNSW<float>** index)
@@ -390,11 +394,154 @@ void save_index_async(const std::string& filename, hnswlib::HierarchicalNSW<floa
   worker->SetCompletionCallback(callback);
   worker->Schedule();
 }
+/*****************/
+
+class HierarchicalNSW {
+public:
+  uint32_t dim_;
+  hnswlib::HierarchicalNSW<float>* index_;
+  hnswlib::SpaceInterface<float>* space_;
+  bool normalize_;
+
+  HierarchicalNSW(const std::string& space_name, uint32_t dim)
+    : index_(nullptr), space_(nullptr), normalize_(false), dim_(dim) {
+    if (space_name == "l2") {
+      space_ = new hnswlib::L2Space(static_cast<size_t>(dim_));
+    }
+    else if (space_name == "ip") {
+      space_ = new hnswlib::InnerProductSpace(static_cast<size_t>(dim_));
+    }
+    else {
+      space_ = new hnswlib::InnerProductSpace(static_cast<size_t>(dim_));
+      normalize_ = true;
+    }
+  }
+
+  ~HierarchicalNSW() {
+    if (space_) delete space_;
+    if (index_) delete index_;
+  }
+
+
+  void initIndex(uint32_t max_elements, uint32_t m = 16, uint32_t ef_construction = 200, uint32_t random_seed = 100,
+    bool allow_replace_deleted = false) {
+    if (index_) delete index_;
+    index_ = new hnswlib::HierarchicalNSW<float>(space_, max_elements, m, ef_construction, random_seed, allow_replace_deleted);
+  }
+
+  void readIndex(const std::string& filename, bool allow_replace_deleted = false) {
+    if (index_) delete index_;
+    index_ = new hnswlib::HierarchicalNSW<float>(space_, filename, false, 0, allow_replace_deleted);
+  }
+
+  void writeIndex(const std::string& filename) {
+    if (index_ == nullptr) {
+      throw std::runtime_error("Search index is not constructed.");
+    }
+    index_->saveIndex(filename);
+  }
+
+  void resizeIndex(uint32_t new_max_elements) {
+    if (index_ == nullptr) {
+      throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
+    }
+    index_->resizeIndex(static_cast<size_t>(new_max_elements));
+  }
+
+
+  void addPoint(const std::vector<float>& vec, uint32_t idx, bool replace_deleted = false) {
+    if (index_ == nullptr) {
+      throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
+    }
+
+    std::vector<float> vec_copy(vec);
+    if (normalize_) normalizePoint(vec_copy);
+
+    index_->addPoint(reinterpret_cast<void*>(vec_copy.data()), static_cast<hnswlib::labeltype>(idx), replace_deleted);
+  }
+
+  void markDelete(uint32_t idx) {
+    if (index_ == nullptr) {
+      throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
+    }
+
+    index_->markDelete(static_cast<hnswlib::labeltype>(idx));
+  }
+
+  void unmarkDelete(uint32_t idx) {
+    if (index_ == nullptr) {
+      throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
+    }
+
+    index_->unmarkDelete(static_cast<hnswlib::labeltype>(idx));
+  }
+
+  emscripten::val searchKnn(const emscripten::val& arr, uint32_t k, const emscripten::val& filterFn) {
+
+    if (index_ == nullptr) {
+      return emscripten::val::undefined();
+    }
+
+    if (arr["length"].as<uint32_t>() != dim_) {
+      return emscripten::val::undefined();
+    }
+
+    std::vector<float> vec(dim_, 0.0);
+    for (uint32_t i = 0; i < dim_; i++) {
+      vec[i] = arr[i].as<float>();
+    }
+
+    if (normalize_) normalizePoint(vec);
+
+    CustomFilterFunctor* filterFnCpp = nullptr;
+    if (!filterFn.isNull() && filterFn.isUndefined()) {
+      filterFnCpp = new CustomFilterFunctor(filterFn);
+    }
+
+    auto knn = index_->searchKnn(reinterpret_cast<void*>(vec.data()), static_cast<size_t>(k), filterFnCpp);
+    const size_t n_results = knn.size();
+    emscripten::val distances = emscripten::val::array();
+    emscripten::val neighbors = emscripten::val::array();
+    for (size_t i = 0; i < n_results; i++) {
+      auto nn = knn.top();
+      distances.set(i, nn.first);
+      neighbors.set(i, nn.second);
+      knn.pop();
+    }
+
+    if (filterFnCpp) delete filterFnCpp;
+
+    emscripten::val results = emscripten::val::object();
+    results.set("distances", distances);
+    results.set("neighbors", neighbors);
+
+    return results;
+  }
+
+  uint32_t getCurrentCount() const {
+    return index_ == nullptr ? 0 : static_cast<uint32_t>(index_->cur_element_count);
+  }
+
+  uint32_t getNumDimensions() const {
+    return dim_;
+  }
+
+  uint32_t getEf() const {
+    return index_ == nullptr ? 0 : index_->ef_;
+  }
+
+  void setEf(uint32_t ef) {
+    if (index_ != nullptr) {
+      index_->setEf(static_cast<size_t>(ef));
+    }
+  }
+
+
+};
 
 
 
 /*****************/
-
 
 EMSCRIPTEN_BINDINGS(hnswlib) {
   using namespace emscripten;
@@ -449,6 +596,20 @@ EMSCRIPTEN_BINDINGS(hnswlib) {
     .function("getResult", &SaveHierarchicalNSWIndexWorker::GetResult)
     .function("getError", &SaveHierarchicalNSWIndexWorker::GetError);
 
+  emscripten::class_<HierarchicalNSW>("HierarchicalNSW")
+    .constructor<const std::string&, uint32_t>()
+    .function("initIndex", &HierarchicalNSW::initIndex)
+    .function("readIndex", &HierarchicalNSW::readIndex)
+    .function("writeIndex", &HierarchicalNSW::writeIndex)
+    .function("resizeIndex", &HierarchicalNSW::resizeIndex)
+    .function("addPoint", &HierarchicalNSW::addPoint)
+    .function("markDelete", &HierarchicalNSW::markDelete)
+    .function("unmarkDelete", &HierarchicalNSW::unmarkDelete)
+    .function("getCurrentCount", &HierarchicalNSW::getCurrentCount)
+    .function("getNumDimensions", &HierarchicalNSW::getNumDimensions)
+    .function("getEf", &HierarchicalNSW::getEf)
+    .function("setEf", &HierarchicalNSW::setEf)
+    ;
 
 
 }
