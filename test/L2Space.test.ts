@@ -1,6 +1,5 @@
 import { testErrors } from "./testErrors";
-import { HnswlibModule, L2Space } from "~lib/hnswlib";
-import { loadHnswlib } from "./loadHnswlib";
+import {  BruteforceSearch, HnswlibModule, L2Space, loadHnswlib } from "~lib/index";
 
 describe("L2Space", () => {
   let hnswlib: HnswlibModule;

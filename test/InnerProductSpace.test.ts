@@ -1,5 +1,4 @@
-import { loadHnswlib } from "./loadHnswlib";
-import hnswlib, { HnswlibModule, InnerProductSpace, L2Space } from "~lib/hnswlib";
+import {  BruteforceSearch, HnswlibModule, InnerProductSpace, loadHnswlib } from "~lib/index";
 import { testErrors} from "./testErrors";
 
 describe("InnerProductSpace", () => {

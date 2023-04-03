@@ -1,7 +1,6 @@
-import { loadHnswlib } from "./loadHnswlib";
-import {  HierarchicalNSW, HnswlibModule, InnerProductSpace, L2Space } from "~lib/hnswlib";
+
+import { defaultParams, HierarchicalNSW, HnswlibModule,  loadHnswlib } from "~lib/index";
 import { testErrors } from "./testErrors";
-import { defaultParams } from "~lib/hnswlibDefaults";
 
 
 describe("hnswlib.HierarchicalNSW", () => {
@@ -73,14 +72,14 @@ describe("hnswlib.HierarchicalNSW", () => {
       }).toThrow(testErrors.unsignedIntArgument);
     });
 
-    it("initIndex it is true if initalized with defaults", () => {
+    it("initIndex it is true if initialized with defaults", () => {
       index.initIndex(5, ...defaultParams.initIndex);
       expect(
         index.isIndexInitialized()
       ).toBeTrue();
     });
 
-    it("initIndex it is true if initalized", () => {
+    it("initIndex it is true if initialized", () => {
       index.initIndex(5, 16, 200, 1, true);
       expect(
         index.isIndexInitialized()
@@ -514,6 +513,7 @@ describe("hnswlib.HierarchicalNSW", () => {
         expect(res.distances[1]).toBeCloseTo(
           1.0 - 28.0 / (Math.sqrt(29) * Math.sqrt(30)),
           6
+          
         );
       });
     });
@@ -537,6 +537,23 @@ describe("hnswlib.HierarchicalNSW", () => {
           neighbors: [2, 0],
         });
       });
+    });
+  });
+
+  describe('#read and write index', () => {
+    beforeAll(async () => {
+      index = new hnswlib.HierarchicalNSW("cosine", 3);
+    });
+
+    beforeAll(() => {
+      index.initIndex(3, ...defaultParams.initIndex);
+      index.addPoint([1, 2, 3], 0, ...defaultParams.addPoint);
+      index.addPoint([2, 3, 4], 1, ...defaultParams.addPoint);
+      index.addPoint([3, 4, 5], 2, ...defaultParams.addPoint);
+    });
+
+    it("it can write a file and read it back", () => {
+      index.writeIndex('testindex.dat');
     });
   });
 });

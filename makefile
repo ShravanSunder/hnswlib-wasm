@@ -12,10 +12,13 @@ CFLAGS += -s MODULARIZE=1
 CFLAGS += -s EXPORT_NAME='hnswlib'
 CFLAGS += -s ASSERTIONS=1
 CFLAGS += -s DEMANGLE_SUPPORT=1
+CLFAGS += -s SINGLE_FILE=1
 CFLAGS += --bind
 # CFLAGS += -s ENVIRONMENT=web,node
 # CFLAGS += -s VERBOSE=1
 CFLAGS += -gsource-map
+CFLAGS += -lnodefs.js
+CFLAGS += -lidbfs.js
 
 # CFLAGS += --source-map-base=http://localhost:8080/
 
@@ -23,7 +26,7 @@ CFLAGS += -gsource-map
 # Define the source directory, the target directory
 SRC_DIR := ./src
 LIB_DIR := ./lib
-MY_COMMENT := /**** GENERATED FILE:  See src for files *****/ 
+MY_COMMENT := /***************** GENERATED FILE ********************/ 
 
 # Define the name of the output JavaScript file within the 'lib' directory.
 OUTPUT = $(LIB_DIR)/hnswlib.js

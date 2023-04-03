@@ -113,7 +113,7 @@ export class BruteforceSearch {
    */
   constructor(spaceName: SpaceName, numDimensions: number);
 
-  /** is index initalized */
+  /** is index initialized */
   isIndexInitialized(): boolean;
 
   /**
@@ -213,7 +213,7 @@ export class HierarchicalNSW {
     allowReplaceDeleted?: boolean
   ): void;
 
-  /** is index initalized */
+  /** is index initialized */
   isIndexInitialized(): boolean;
 
   /**
@@ -299,20 +299,20 @@ export class HierarchicalNSW {
   setEf(ef: number): void;
 }
 
+export class EmscriptenFileSystemManager {
+  constructor();
+  static initializeFileSystem(fsType:'NODEFS' | 'IDBFS'): void;
+  static isInitialized(): boolean;
+}
 
 export interface HnswlibModule {
-  normalizePoint(arg0: unknown): void;
+  normalizePoint(vec: number[]): number[];
 
-  save_index_async(arg0: string, arg1: unknown, arg2: any, arg3: any): void;
-  SaveHierarchicalNSWIndexWorker: typeof SaveHierarchicalNSWIndexWorker
   L2Space: typeof L2Space
   InnerProductSpace: typeof InnerProductSpace
-  CustomFilterFunctor: typeof CustomFilterFunctor
-  LoadBruteforceSearchIndexWorker: typeof LoadBruteforceSearchIndexWorker
-  SaveBruteforceSearchIndexWorker: typeof SaveBruteforceSearchIndexWorker
   BruteforceSearch: typeof BruteforceSearch
-  LoadHierarchicalNSWIndexWorker: typeof LoadHierarchicalNSWIndexWorker
   HierarchicalNSW: typeof HierarchicalNSW
+  EmscriptenFileSystemManager: typeof EmscriptenFileSystemManager
 }
 declare function factory(args?: Partial<EmscriptenModule> ): Promise<HnswlibModule>;
 export default factory;

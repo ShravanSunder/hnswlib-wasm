@@ -1,7 +1,6 @@
-import { loadHnswlib } from "./loadHnswlib";
-import {  BruteforceSearch, HnswlibModule, } from "~lib/hnswlib";
+
+import {  BruteforceSearch, HnswlibModule, loadHnswlib } from "~lib/index";
 import { testErrors } from "./testErrors";
-import { defaultParams } from "~lib/hnswlibDefaults";
 
 describe("BruteforceSearch", () => {
   let hnswlib: HnswlibModule;
@@ -69,7 +68,7 @@ describe("BruteforceSearch", () => {
       }).toThrow(testErrors.arugmentCount);
     });
 
-    it("initIndex it is true if initalized with defaults", () => {
+    it("initIndex it is true if initialized with defaults", () => {
       index.initIndex(5, );
       expect(
         index.isIndexInitialized()
