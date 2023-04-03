@@ -5,6 +5,7 @@
     "*.excalidrawlib": "json",
     "stdexcept": "cpp",
     "exception": "cpp",
-    "numeric": "cpp"
+    "numeric": "cpp",
+    "__mutex_base": "cpp"
   }
 }

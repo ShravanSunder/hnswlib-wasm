@@ -57,8 +57,8 @@ export const loadHnswlib = async (): Promise<HnswlibModule> => {
     // });
     if (!library) {
       library = await factory();
-      await initializeFileSystemAsync();
       console.log('Library initialized');
+      await initializeFileSystemAsync();
       return library; // Add this line
     }
     return library;

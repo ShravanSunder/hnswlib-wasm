@@ -600,7 +600,6 @@ namespace emscripten {
     }
   };
 
-
   /*****************/
   class EmscriptenFileSystemManager {
   public:
@@ -611,41 +610,28 @@ namespace emscripten {
 
       if (!initialized_) {
         EM_ASM({
-            let type = UTF8ToString($0);
-            let directory = UTF8ToString($1);
-            let allocatedDir = _malloc(directory.length + 1);
-            stringToUTF8(directory, allocatedDir, directory.length + 1);
-            let jsAllocatedDir = UTF8ToString(allocatedDir);
+          let type = UTF8ToString($0);
+          let directory = UTF8ToString($1);
+          let allocatedDir = _malloc(directory.length + 1);
+          stringToUTF8(directory, allocatedDir, directory.length + 1);
+          let jsAllocatedDir = UTF8ToString(allocatedDir);
 
-            if (type == "IDBFS") {
-              FS.mkdir(jsAllocatedDir);
-              FS.mount(IDBFS, {}, jsAllocatedDir);
-
-              Module.syncfs = function(callback) {
-                  FS.syncfs(false, function(err) {
-                      if (err) {
-                          console.error('Error syncing FS:', err);
-                          callback(false);
-                      }
-                    else {
-                      console.log('FS synced successfully');
-                      callback(true);
-                    }
-                });
-              };
-            }
-            else if (type == "NODEFS") {
-              FS.mkdir(jsAllocatedDir);
-              FS.mount(NODEFS, { root: '.' }, jsAllocatedDir);
-            }
-            else if (type == "WORKERFS") {
-              FS.mkdir(jsAllocatedDir);
-              FS.mount(WORKERFS, { hnswlibBlobs }, jsAllocatedDir);
-            }
-            else {
-              throw new Error('Unsupported filesystem type, only NODEFS, IDBFS: ' + type);
-            }
-            _free(allocatedDir);
+          if (type == "IDBFS") {
+            FS.mkdir(jsAllocatedDir);
+            FS.mount(IDBFS, {}, jsAllocatedDir);
+          }
+          else if (type == "NODEFS") {
+            FS.mkdir(jsAllocatedDir);
+            FS.mount(NODEFS, { root: '.' }, jsAllocatedDir);
+          }
+          else if (type == "WORKERFS") {
+            FS.mkdir(jsAllocatedDir);
+            FS.mount(WORKERFS, { hnswlibBlobs }, jsAllocatedDir);
+          }
+          else {
+            // throw new Error('Unsupported filesystem type, only NODEFS, IDBFS: ' + type);
+          }
+          _free(allocatedDir);
           }, fsTypeCStr, directory);
         initialized_ = true;
       }
@@ -662,6 +648,36 @@ namespace emscripten {
     std::unique_ptr<HierarchicalNSW> hnsw_;
 
   };
+
+  extern "C" {
+    typedef void (*syncfs_callback)(int);
+
+    void hnswlib_syncfs_internal(bool read, syncfs_callback callback) {
+      EM_ASM({
+        const read = $0;
+        const callback = $1;
+
+        FS.syncfs(read, function(err) {
+          if (err) {
+            console.error('Error syncing FS:', err);
+            Runtime.dynCall('vi', callback,[-1]);
+          }
+        else {
+          console.log('FS synced successfully');
+          dynCall('vi', callback,[0]);
+          }
+        });
+        }, read, callback);
+    }
+
+    void hnswlib_syncfs(bool read) {
+      hnswlib_syncfs_internal(read, [](int result) {
+        // Handle result here, e.g., store it in a global variable.
+        });
+    }
+  }
+
+
 
   // Initialize static members
   std::mutex EmscriptenFileSystemManager::init_mutex_;
@@ -721,6 +737,8 @@ namespace emscripten {
       .function("setEf", &HierarchicalNSW::setEf)
       .function("searchKnn", &HierarchicalNSW::searchKnn)
       ;
+
+    function("syncFs", &hnswlib_syncfs);
 
     emscripten::class_<EmscriptenFileSystemManager>("EmscriptenFileSystemManager")
       .constructor<>()

@@ -305,9 +305,10 @@ export class EmscriptenFileSystemManager {
   static isInitialized(): boolean;
 }
 
+
 export interface HnswlibModule {
   normalizePoint(vec: number[]): number[];
-
+  syncFs: (read: boolean) => Promise<boolean>;
   L2Space: typeof L2Space
   InnerProductSpace: typeof InnerProductSpace
   BruteforceSearch: typeof BruteforceSearch

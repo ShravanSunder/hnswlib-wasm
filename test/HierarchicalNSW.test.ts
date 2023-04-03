@@ -552,8 +552,12 @@ describe("hnswlib.HierarchicalNSW", () => {
       index.addPoint([3, 4, 5], 2, ...defaultParams.addPoint);
     });
 
-    it("it can write a file and read it back", () => {
+    it("it can write a file and read it back", async () => {
       index.writeIndex('testindex.dat');
+      console.log (hnswlib.syncFs)
+      console.log (hnswlib.syncFs)
+      const data = await hnswlib.syncFs(false);
+      console.log(data);
     });
   });
 });

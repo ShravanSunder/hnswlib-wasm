@@ -12,13 +12,14 @@ CFLAGS += -s MODULARIZE=1
 CFLAGS += -s EXPORT_NAME='hnswlib'
 CFLAGS += -s ASSERTIONS=1
 CFLAGS += -s DEMANGLE_SUPPORT=1
-CLFAGS += -s SINGLE_FILE=1
+#CFLAGS += -s ASYNCIFY
 CFLAGS += --bind
 # CFLAGS += -s ENVIRONMENT=web,node
 # CFLAGS += -s VERBOSE=1
 CFLAGS += -gsource-map
 CFLAGS += -lnodefs.js
 CFLAGS += -lidbfs.js
+
 
 # CFLAGS += --source-map-base=http://localhost:8080/
 
@@ -41,7 +42,7 @@ HNSWLIB_INCLUDE = ./$(SRC_DIR)/hnswlib
 CFLAGS += -I$(HNSWLIB_INCLUDE)
 
 # Create a target called `all` that builds the output file.
-all: $(OUTPUT) copy_and_prepend
+all: $(OUTPUT) copy_and_comment
 
 # Define the rule for building the output file, which depends on the source files.
 # First, create the output directory if it doesn't exist, then compile and link the source files.
@@ -58,8 +59,10 @@ clean:
 rebuild: clean all
 .PHONY: rebuild
 
-copy_and_prepend: $(wildcard $(SRC_DIR)/*.ts)
+copy_and_comment: $(wildcard $(SRC_DIR)/*.ts)
 	@cp $^ $(LIB_DIR)
 	@for f in $(LIB_DIR)/*.ts; do \
 	    echo "$(MY_COMMENT)" | cat - $$f > tmpfile && mv tmpfile $$f; \
+			echo " " >> $$f; \
+	    echo "$(MY_COMMENT)" >> $$f; \
 	done
