@@ -1,12 +1,12 @@
 {
-  "name": "hnswlib-node",
+  "name": "hnswlib-wasm",
   "version": "1.4.2",
-  "description": "Node.js bindings for Hnswlib",
+  "description": "typescript and wasm bindings for Hnswlib",
   "main": "lib/index.js",
-  "types": "lib/index.d.ts",
-  "repository": "https://github.com/yoshoku/hnswlib-node",
-  "homepage": "https://github.com/yoshoku/hnswlib-node",
-  "author": "Atsushi Tatsuma",
+  "types": "lib/hnswlib.d.ts",
+  "repository": "https://github.com/shravansunder/hnswlib-wasm",
+  "homepage": "https://github.com/shravansunder/hnswlib-wasm",
+  "author": "Shravan Sunder<shravan.sunder.dev@gmail.com>",
   "license": "Apache-2.0",
   "keywords": [
     "hnswlib",
@@ -16,15 +16,9 @@
   "gypfile": true,
   "scripts": {
     "prepare": "husky install",
-    "build": "node-gyp build",
-    "rebuild": "node-gyp rebuild",
-    "test": "jest",
-    "doc": "typedoc"
-  },
-  "dependencies": {
-    "bindings": "^1.5.0",
-    "node-addon-api": "^6.0.0",
-    "ts": "^0.2.2"
+    "build": "make",
+    "rebuild": "make rebuild",
+    "test": "jest"
   },
   "devDependencies": {
     "@types/emscripten": "^1.39.6",
@@ -43,7 +37,9 @@
     "ts-node": "^10.9.1",
     "tsembind": "^1.1.0",
     "typedoc": "^0.23.28",
-    "typescript": "^5.0.3"
+    "typescript": "^5.0.3",
+    "vite": "^4.2.1",
+    "vite-plugin-wasm": "^3.2.2"
   },
   "packageManager": "yarn@3.5.0"
 }

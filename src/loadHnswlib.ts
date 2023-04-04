@@ -5,9 +5,10 @@ import { HnswlibModule } from './';
 const isNode = typeof process !== 'undefined' && process.versions != null && process.versions.node != null;
 
 let library: Awaited<ReturnType<typeof factory>>;
+type InputFsType = 'NODEFS' | 'IDBFS' | undefined;
 
-const initializeFileSystemAsync = async (): Promise<void> => {
-  const fsType = isNode ? 'NODEFS' : 'IDBFS';
+const initializeFileSystemAsync = async (inputFsType?: InputFsType ): Promise<void> => {
+  const fsType = inputFsType == null ? (isNode ? 'NODEFS' : 'IDBFS') : inputFsType;
   const EmscriptenFileSystemManager = library.EmscriptenFileSystemManager;
   return new Promise(function (resolve, reject) {
     
@@ -44,7 +45,7 @@ const loadWasmBinary = async (wasmPath: string ) => {
 /**
  * Load the HNSW library in node or browser
  */
-export const loadHnswlib = async (): Promise<HnswlibModule> => {
+export const loadHnswlib = async (inputFsType?: InputFsType): Promise<HnswlibModule> => {
   try {
     // const wasmPath = './hnswlib.wasm'; // Make sure this path is correct for both Node and browser environments
     // const wasmBinary = await loadWasmBinary(wasmPath);
@@ -58,7 +59,7 @@ export const loadHnswlib = async (): Promise<HnswlibModule> => {
     if (!library) {
       library = await factory();
       console.log('Library initialized');
-      await initializeFileSystemAsync();
+      await initializeFileSystemAsync(inputFsType);
       return library; // Add this line
     }
     return library;
