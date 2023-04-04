@@ -553,11 +553,16 @@ describe("hnswlib.HierarchicalNSW", () => {
     });
 
     it("it can write a file and read it back", async () => {
-      index.writeIndex('testindex.dat');
+      const file = 'testindex.dat';
+      index.writeIndex(file);
       console.log (hnswlib.syncFs)
       console.log (hnswlib.syncFs)
       const data = await hnswlib.syncFs(false);
-      console.log(data);
+      const fs = await import('fs')
+      //expect(fs.existsSync(file)).toBe(true)
+      console.log('TEST IS done');
+
+
     });
   });
 });
