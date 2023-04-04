@@ -86,10 +86,124 @@ namespace emscripten {
   }
 
 
+  /*****************/
+  class EmscriptenFileSystemManager {
+  public:
+    static std::string virtualDirectory;
+
+    static void initializeFileSystem(const std::string& fsType) {
+      std::lock_guard<std::mutex> lock(init_mutex_);
+      virtualDirectory = "/hnswlib-index";
+      const char* virtualDirCStr = virtualDirectory.c_str();
+      const char* fsTypeCStr = fsType.c_str();
+
+      if (!initialized_) {
+        EM_ASM({
+          let type = UTF8ToString($0);
+          let directory = UTF8ToString($1);
+          let allocatedDir = _malloc(directory.length + 1);
+          stringToUTF8(directory, allocatedDir, directory.length + 1);
+          let jsAllocatedDir = UTF8ToString(allocatedDir);
+          console.log('allocated dir', jsAllocatedDir);
+
+          if (type == "IDBFS") {
+            FS.mkdir(jsAllocatedDir);
+            FS.mount(IDBFS, {}, jsAllocatedDir);
+            console.log('EmscriptenFileSystemManager: Mounting IDBFS filesystem...');
+          }
+          else if (type == "NODEFS") {
+            if (!FS.analyzePath(jsAllocatedDir).exists) {
+              FS.mkdir(jsAllocatedDir);
+            }
+             FS.mount(NODEFS, { root: './tmp' }, jsAllocatedDir);
+            console.log('EmscriptenFileSystemManager: Mounting NODEFS   filesystem...');
+          }
+          else if (type == "WORKERFS") {
+            FS.mkdir(jsAllocatedDir);
+            FS.mount(WORKERFS, { hnswlibBlobs }, jsAllocatedDir);
+          }
+          else {
+             throw new Error('Unsupported filesystem type, only NODEFS, IDBFS: ' + type);
+          }
+
+          // var fs = require('fs');
+          // fs.writeFileSync('./tmp/foobar.txt', 'yeehaw',{encoding:'utf8',flag : 'w'});
+
+          FS.syncfs(true, function(err) {
+            // Error
+            if (err) {
+              console.error('EmscriptenFileSystemManager: Error syncing FS:', err);
+              throw new Error('EmscriptenFileSystemManager: Error syncing FS: ' + err);
+            }
+            else {
+              console.log('EmscriptenFileSystemManager: FS synced successfully');
+            }
+          });
+          _free(allocatedDir);
+          }, fsTypeCStr, virtualDirCStr);
+
+        initialized_ = true;
+
+        // printf("Syncing FS 1...\n");
+        // FILE* fp = fopen("/hnswlib/abcdefg.txt", "w");
+        // if (fp) {
+        //   fprintf(fp, "test\n");
+        //   fclose(fp);
+        // }
+      }
+    }
+
+    static bool isInitialized() {
+      std::lock_guard<std::mutex> lock(init_mutex_);
+      return initialized_;
+    }
+
+  private:
+    static std::mutex init_mutex_;
+    static bool initialized_;
+  };
+
+  extern "C" {
+    typedef void (*syncfs_callback)(int);
+
+    void hnswlib_syncfs_internal(bool read, syncfs_callback callback) {
+      // printf("Syncing FS 2...\n");
+      // FILE* fp = fopen("/tmp/abcdefg.txt", "w");
+      // if (fp) {
+      //   fprintf(fp, "test\n");
+      //   fclose(fp);
+      // }
+      EM_ASM({
+        const read = $0;
+        const callback = $1;
+
+        FS.syncfs(read, function(err) {
+          if (err) {
+            console.error('Error syncing FS:', err);
+            Runtime.dynCall('vi', callback,[-1]);
+          }
+        else {
+          console.log('FS synced successfully');
+          dynCall('vi', callback,[0]);
+          }
+        });
+        }, read, callback);
+    }
+
+    void hnswlib_syncfs(bool read) {
+      hnswlib_syncfs_internal(read, [](int result) {
+        // Handle result here, e.g., store it in a global variable.
+
+        });
+    }
+  }
 
 
 
-
+  // Initialize static members
+  std::mutex EmscriptenFileSystemManager::init_mutex_;
+  bool EmscriptenFileSystemManager::initialized_ = false;
+  std::string EmscriptenFileSystemManager::virtualDirectory = "/hnswlib-index";
 
 
   /*****************/
@@ -409,8 +523,10 @@ namespace emscripten {
     void readIndex(const std::string& filename, bool allow_replace_deleted = false) {
       if (index_) delete index_;
 
+      const std::string path = EmscriptenFileSystemManager::virtualDirectory + "/" + filename;
+
       try {
-        index_ = new hnswlib::HierarchicalNSW<float>(space_, filename, false, 0, allow_replace_deleted);
+        index_ = new hnswlib::HierarchicalNSW<float>(space_, path, false, 0, allow_replace_deleted);
       }
       catch (const std::runtime_error& e) {
         std::string errorMessage(e.what());
@@ -431,7 +547,8 @@ namespace emscripten {
       if (index_ == nullptr) {
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
-      index_->saveIndex(filename);
+      const std::string path = EmscriptenFileSystemManager::virtualDirectory + "/" + filename;
+      index_->saveIndex(path);
     }
 
     void resizeIndex(uint32_t new_max_elements) {
@@ -599,129 +716,6 @@ namespace emscripten {
       }
     }
   };
-
-  /*****************/
-  class EmscriptenFileSystemManager {
-  public:
-    static std::string virtualDirectory;
-
-    static void initializeFileSystem(const std::string& fsType) {
-      std::lock_guard<std::mutex> lock(init_mutex_);
-      virtualDirectory = "/hnswlib";
-      const char* virtualDirCStr = virtualDirectory.c_str();
-      const char* fsTypeCStr = fsType.c_str();
-
-      if (!initialized_) {
-        EM_ASM({
-          let type = UTF8ToString($0);
-          let directory = UTF8ToString($1);
-          let allocatedDir = _malloc(directory.length + 1);
-          stringToUTF8(directory, allocatedDir, directory.length + 1);
-          let jsAllocatedDir = UTF8ToString(allocatedDir);
-          console.log('allocated dir', jsAllocatedDir);
-
-          if (type == "IDBFS") {
-            FS.mkdir(jsAllocatedDir);
-            FS.mount(IDBFS, {}, jsAllocatedDir);
-            console.log('EmscriptenFileSystemManager: Mounting IDBFS filesystem...');
-          }
-          else if (type == "NODEFS") {
-            if (!FS.analyzePath(jsAllocatedDir).exists) {
-              FS.mkdir(jsAllocatedDir);
-            }
-             FS.mount(NODEFS, { root: './tmp' }, jsAllocatedDir);
-            console.log('EmscriptenFileSystemManager: Mounting NODEFS filesystem...');
-          }
-          else if (type == "WORKERFS") {
-            FS.mkdir(jsAllocatedDir);
-            FS.mount(WORKERFS, { hnswlibBlobs }, jsAllocatedDir);
-          }
-          else {
-             throw new Error('Unsupported filesystem type, only NODEFS, IDBFS: ' + type);
-          }
-
-          var fs = require('fs');
-          fs.writeFileSync('./tmp/foobar.txt', 'yeehaw',{encoding:'utf8',flag : 'w'});
-
-          FS.syncfs(true, function(err) {
-            // Error
-            if (err) {
-              console.error('EmscriptenFileSystemManager: Error syncing FS:', err);
-              throw new Error('EmscriptenFileSystemManager: Error syncing FS: ' + err);
-            }
-            else {
-              console.log('EmscriptenFileSystemManager: FS synced successfully');
-            }
-          });
-          _free(allocatedDir);
-          }, fsTypeCStr, virtualDirCStr);
-
-        initialized_ = true;
-
-        printf("Syncing FS 1...\n");
-        FILE* fp = fopen("/hnswlib/abcdefg.txt", "w");
-        if (fp) {
-          fprintf(fp, "test\n");
-          fclose(fp);
-        }
-      }
-    }
-
-    static bool isInitialized() {
-      std::lock_guard<std::mutex> lock(init_mutex_);
-      return initialized_;
-    }
-
-  private:
-    static std::mutex init_mutex_;
-    static bool initialized_;
-    std::unique_ptr<HierarchicalNSW> hnsw_;
-
-  };
-
-  extern "C" {
-    typedef void (*syncfs_callback)(int);
-
-    void hnswlib_syncfs_internal(bool read, syncfs_callback callback) {
-      printf("Syncing FS 2...\n");
-      FILE* fp = fopen("/tmp/abcdefg.txt", "w");
-      if (fp) {
-        fprintf(fp, "test\n");
-        fclose(fp);
-      }
-      EM_ASM({
-        const read = $0;
-        const callback = $1;
-
-        FS.syncfs(read, function(err) {
-          if (err) {
-            console.error('Error syncing FS:', err);
-            Runtime.dynCall('vi', callback,[-1]);
-          }
-        else {
-          console.log('FS synced successfully');
-          dynCall('vi', callback,[0]);
-          }
-        });
-        }, read, callback);
-    }
-
-    void hnswlib_syncfs(bool read) {
-      hnswlib_syncfs_internal(read, [](int result) {
-        // Handle result here, e.g., store it in a global variable.
-
-        });
-    }
-  }
-
-
-
-  // Initialize static members
-  std::mutex EmscriptenFileSystemManager::init_mutex_;
-  bool EmscriptenFileSystemManager::initialized_ = false;
-  std::string EmscriptenFileSystemManager::virtualDirectory = "/tmp";
-
-
 
 
   /*****************/

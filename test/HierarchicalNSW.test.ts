@@ -541,28 +541,37 @@ describe("hnswlib.HierarchicalNSW", () => {
   });
 
   describe('#read and write index', () => {
+    const localIndexLocation = './tmp/testindex.dat';
+    const filename = 'testindex.dat';
     beforeAll(async () => {
-      index = new hnswlib.HierarchicalNSW("cosine", 3);
+      index = new hnswlib.HierarchicalNSW("ip", 3);
+      const fs = await import('fs')
+      if (fs.existsSync(localIndexLocation)) {
+        await fs.unlinkSync(localIndexLocation)
+      }
     });
 
-    beforeAll(() => {
+    beforeEach(() => {
       index.initIndex(3, ...defaultParams.initIndex);
       index.addPoint([1, 2, 3], 0, ...defaultParams.addPoint);
       index.addPoint([2, 3, 4], 1, ...defaultParams.addPoint);
       index.addPoint([3, 4, 5], 2, ...defaultParams.addPoint);
+      expect(index.getPoint(0)).toMatchObject([1, 2, 3]);
+      index.writeIndex(filename);
     });
 
     it("it can write a file and read it back", async () => {
-      const file = 'testindex.dat';
-      index.writeIndex(file);
-      console.log (hnswlib.syncFs)
-      console.log (hnswlib.syncFs)
-      const data = await hnswlib.syncFs(false);
+      index.writeIndex(filename);
+      await hnswlib.syncFs(false);
       const fs = await import('fs')
-      //expect(fs.existsSync(file)).toBe(true)
-      console.log('TEST IS done');
+      expect(fs.existsSync(localIndexLocation)).toBe(true)
+    });
 
-
+    it("it can write a file and read it back", async () => {
+      expect(index.getPoint(0)).toMatchObject([1, 2, 3]);
+      index = new hnswlib.HierarchicalNSW("ip", 3);
+      index.readIndex('testindex.dat', false);
+      expect(index.getPoint(0)).toMatchObject([1, 2, 3]);
     });
   });
 });

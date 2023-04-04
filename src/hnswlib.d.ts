@@ -221,7 +221,7 @@ export class HierarchicalNSW {
    * @param {string} filename The filename to read from.
    * @param {boolean} allowReplaceDeleted The flag to replace deleted element when adding new element (default: false).
    */
-  readIndex(filename: string, allowReplaceDeleted?: boolean): Promise<boolean>;
+  readIndex(filename: string, allowReplaceDeleted: boolean): Promise<boolean>;
   /**
    * saves the search index.
    * @param {string} filename The filename to save to.
@@ -238,7 +238,7 @@ export class HierarchicalNSW {
    * @param {number} label The index of the datum point to be added.
    * @param {boolean} replaceDeleted The flag to replace a deleted element (default: false).
    */
-  addPoint(point: number[], label: number, replaceDeleted?: boolean): void;
+  addPoint(point: number[], label: number, replaceDeleted: boolean): void;
   /**
    * marks the element as deleted. The marked element does not appear on the search result.
    * @param {number} label The index of the datum point to be marked.
