@@ -5,3 +5,4 @@
 .yarn/cache
 .yarn/install-state.gz
 lib
+dist

@@ -317,3 +317,4 @@ export interface HnswlibModule {
 }
 declare function factory(args?: Partial<EmscriptenModule> ): Promise<HnswlibModule>;
 export default factory;
+export type Factory = typeof factory;

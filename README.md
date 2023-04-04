@@ -1,23 +1,27 @@
-# hnswlib-node
+# hnswlib-wasm
 
-[![npm version](https://badge.fury.io/js/hnswlib-node.svg)](https://badge.fury.io/js/hnswlib-node)
-[![Build Status](https://github.com/yoshoku/hnswlib-node/actions/workflows/build.yml/badge.svg)](https://github.com/yoshoku/hnswlib-node/actions/workflows/build.yml)
-[![License](https://img.shields.io/badge/License-Apache%202.0-yellowgreen.svg)](https://github.com/yoshoku/hnswlib-node/blob/main/LICENSE.txt)
-[![Documentation](https://img.shields.io/badge/api-reference-blue.svg)](https://yoshoku.github.io/hnswlib-node/doc/)
+This is a wasm version of [hnswlib](https://github.com/nmslib/hnswlib). Created by @ShravanSunder
 
-hnswlib-node provides Node.js bindings for [Hnswlib](https://github.com/nmslib/hnswlib)
+Created with the help of library [hnswlib-node](https://github.com/yoshoku/hnswlib-node/).  See his wonderful docs here, [![documentation](https://img.shields.io/badge/api-reference-blue.svg)](https://yoshoku.github.io/hnswlib-node/doc/) Thanks @yoshoku! 
+
+> Note:  This is still a beta!
+
+
+`hnswlib-wasm` provides Node.js bindings for [Hnswlib](https://github.com/nmslib/hnswlib)
 that implements approximate nearest-neghbor search based on
-hierarchical navigable small world graphs.
+hierarchical navigable small world graphs.  It will work in node.js and browser and is compiled with emscripten.
 
 ## Installation
 
 ```sh
-$ npm install hnswlib-node
+$ yarn add hnswlib-wasm
 ```
 
 ## Documentation
 
-* [hnswlib-node API Documentation](https://yoshoku.github.io/hnswlib-node/doc/)
+* [hnswlib-node API Documentation](https://yoshoku.github.io/hnswlib-node/doc/) by @yoshoku for hnswlib-node is a accurate description of the API.  I will have modified the typescript definitions the API to work with wasm.  I will update this documentation as I go.  I will also add more examples.
+* The big differences are loading and saving the index.  It supports `indexedDB` (in browser) and `fs` (in node) and uses FS from emscripten to save and laod the index via the virtual file system.
+* See the changelog from `hnswlib-node` for more details by @yoshoku [changelog](./CHANGELOG.md)
 
 ## Usage
 
@@ -67,10 +71,21 @@ console.table(result);
 
 ## License
 
-hnswlib-node is available as open source under the terms of the [Apache-2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
+hnswlib-wasm is available as open source under the terms of the [Apache-2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/yoshoku/hnswlib-node.
-This project is intended to be a safe, welcoming space for collaboration,
-and contributors are expected to adhere to the [Contributor Covenant](https://contributor-covenant.org) code of conduct.
+To build
+```
+yarn install
+make rebuild
+yarn build
+```
+
+To test
+```
+yarn test
+```
+
+
+Contact @ShravanSunder first!
