@@ -50,10 +50,10 @@ export const loadHnswlib = async (
         console.log(temp, temp2, temp3, esmModule);
         factory = temp2
       }
-      else {
+      // else {
         const modulePath = require.resolve("./hnswlib.js");
         factory = require(modulePath);
-      }
+      // }
     } else {
       const temp = (await import("./hnswlib.js"));
       factory = temp.default;

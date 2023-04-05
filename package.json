@@ -1,6 +1,6 @@
 {
   "name": "hnswlib-wasm",
-  "version": "0.0.4-beta.8",
+  "version": "0.0.1-beta.11",
   "description": "typescript and wasm bindings for Hnswlib",
   "main": "./dist/hnswlib-wasm.umd.cjs",
   "module": "./dist/hnswlib-wasm.js",
@@ -19,9 +19,12 @@
   "keywords": [
     "hnswlib",
     "approximate nearest neighbor search",
-    "machine learning"
+    "machine learning",
+    "wasm",
+    "typescript",
+    "emscripten",
+    "embeddings"
   ],
-  "gypfile": true,
   "scripts": {
     "prepare": "husky install",
     "build": "make && yarn vite build",
