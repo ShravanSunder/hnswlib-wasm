@@ -1,12 +1,12 @@
 import "./hnswlib.js";
-import * as wasm from "./hnswlib.wasm";
 import { type Factory } from "./hnswlib";
+import * as esmModule from "./hnswlib.js";
 import { HnswlibModule } from "./";
 
 const isNode =
   typeof process !== "undefined" &&
-  process.versions != null &&
-  process.versions.node != null;
+  process?.versions != null &&
+  process?.versions?.node != null;
 
 let library: Awaited<ReturnType<Factory>>;
 type InputFsType = "NODEFS" | "IDBFS" | undefined;
@@ -33,20 +33,6 @@ const initializeFileSystemAsync = async (
     }, 0);
   });
 };
-
-// Utility function to load the WASM binary depending on the environment
-const loadWasmBinary = async (wasmPath: string) => {
-  if (isNode) {
-    const fs = await import("fs/promises");
-    const path = await import("path");
-    const fullPath = path.join(__dirname, "..", "lib", wasmPath);
-    return await fs.readFile(fullPath);
-  } else {
-    const response = await fetch(wasmPath);
-    return await response.arrayBuffer();
-  }
-};
-
 /**
  * Load the HNSW library in node or browser
  */
@@ -56,10 +42,21 @@ export const loadHnswlib = async (
   try {
     let factory: Factory;
     if (isNode) {
-      const modulePath = require.resolve("./hnswlib.js");
-      factory = require(modulePath);
+      if (typeof document !== "undefined") {
+        // this is electron
+        const temp = (await import("./hnswlib.js")) as any;
+        const temp2 = await temp?.();
+        const temp3 = temp2 ? esmModule : esmModule.default;
+        console.log(temp, temp2, temp3, esmModule);
+        factory = temp2
+      }
+      else {
+        const modulePath = require.resolve("./hnswlib.js");
+        factory = require(modulePath);
+      }
     } else {
-      factory = (await import("./hnswlib.js")).default;
+      const temp = (await import("./hnswlib.js"));
+      factory = temp.default;
     }
 
     if (!library) {

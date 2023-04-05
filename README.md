@@ -2,7 +2,7 @@
 
 This is a wasm version of [hnswlib](https://github.com/nmslib/hnswlib). Created by @ShravanSunder
 
-Created with the help of library [hnswlib-node](https://github.com/yoshoku/hnswlib-node/).  See his wonderful docs here, [![documentation](https://img.shields.io/badge/api-reference-blue.svg)](https://yoshoku.github.io/hnswlib-node/doc/) Thanks @yoshoku! 
+Created with the help of library [hnswlib-node](https://github.com/yoshoku/hnswlib-node/).  See his wonderful docs here, [documentation](https://yoshoku.github.io/hnswlib-node/doc/) Thanks @yoshoku! 
 
 > Note:  This is still a beta!
 
@@ -68,6 +68,23 @@ const result = index.searchKnn(query, numNeighbors);
 
 console.table(result);
 ```
+
+## More on hnswlib
+HNSW (Hierarchical Navigable Small World) is a graph-based index structure for efficient similarity search in high-dimensional spaces. It has several parameters that can be tuned to control the trade-off between search quality and index size or construction time. Here are some of the key parameters:
+
+- M: This controls the maximum number of connections each node can have in the graph. Increasing M can improve search quality at the cost of index size and construction time.
+
+- efConstruction: This controls the maximum number of nodes that can be visited during the construction of the graph. Increasing efConstruction can improve search quality at the cost of construction time.
+
+- efSearch: This controls the maximum number of nodes that can be visited during a search. Increasing efSearch can improve search quality at the cost of search time.
+
+- levelMult: This controls the number of connections between nodes at adjacent levels in the graph. Increasing levelMult can improve search quality at the cost of index size and construction time.
+
+- randomSeed: This sets the seed for the random number generator used in the construction of the graph. Setting the seed can ensure reproducibility of results.
+
+- distance: This specifies the distance metric to be used in the similarity search. The choice of distance metric depends on the nature of the data being indexed.
+
+
 
 ## License
 

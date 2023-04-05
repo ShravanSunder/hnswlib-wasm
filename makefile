@@ -33,7 +33,7 @@ LIB_DIR := ./lib
 MY_COMMENT := /***************** GENERATED FILE ********************/ 
 
 # Define the name of the output JavaScript file within the 'lib' directory.
-OUTPUT = $(LIB_DIR)/hnswlib.js
+OUTPUT = $(LIB_DIR)/hnswlib
 
 # Define the list of source files that need to be compiled.
 SOURCES = ./$(SRC_DIR)/wrapper.cpp
@@ -51,11 +51,12 @@ all: $(OUTPUT) copy_and_comment
 # First, create the output directory if it doesn't exist, then compile and link the source files.
 $(OUTPUT): $(SOURCES)
 	mkdir -p lib
-	$(CC) $(CFLAGS) $(LDFLAGS) $(SOURCES) -o $(OUTPUT)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(SOURCES) -o $(OUTPUT).mjs 
+	$(CC) $(CFLAGS) $(LDFLAGS) $(SOURCES) -o $(OUTPUT).js
 
 # Add a `clean` target to remove generated files from the 'lib' directory.
 clean:
-	rm -f $(OUTPUT) lib/$(OUTPUT).wasm
+	rm -f $(OUTPUT).mjs $(OUTPUT).wasm $(OUTPUT).cjs $(OUTPUT).js
 
 .PHONY: all clean
 

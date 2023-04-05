@@ -5,9 +5,7 @@ import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
 import commonjs from 'vite-plugin-commonjs'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
-
-
-
+import nodeResolve from "@rollup/plugin-node-resolve";
 
 
 export default defineConfig({
@@ -30,13 +28,15 @@ export default defineConfig({
           dest: './',
         }
       ]
-    })
+    }), 
+    nodeResolve({ browser: true }),
   ],
   optimizeDeps: {
     include: [],
-    exclude: ['./lib/hnswlib.js', './lib/hnswlib.wasm']
+    exclude: [ ]
   },
   build: {
+    minify: false,
     sourcemap: true,
     lib: {
       // Could also be a dictionary or array of multiple entry points
@@ -47,7 +47,7 @@ export default defineConfig({
     },
     commonjsOptions: {
       include: [],
-      exclude: ['./lib/hnswlib.js', './lib/hnswlib.wasm']
+      exclude: []
     },
     rollupOptions: {
       // make sure to externalize deps that shouldn't be bundled
