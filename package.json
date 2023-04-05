@@ -1,6 +1,6 @@
 {
   "name": "hnswlib-wasm",
-  "version": "0.0.1-beta.7",
+  "version": "0.0.2-0",
   "description": "typescript and wasm bindings for Hnswlib",
   "main": "./dist/hnswlib-wasm.umd.cjs",
   "module": "./dist/hnswlib-wasm.js",
