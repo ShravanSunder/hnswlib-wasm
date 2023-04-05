@@ -1,0 +1,11 @@
+{
+  "editor.defaultFormatter": "ms-vscode.cpptools",
+  "files.associations": {
+    "*.excalidraw": "json",
+    "*.excalidrawlib": "json",
+    "stdexcept": "cpp",
+    "exception": "cpp",
+    "numeric": "cpp",
+    "__mutex_base": "cpp"
+  }
+}

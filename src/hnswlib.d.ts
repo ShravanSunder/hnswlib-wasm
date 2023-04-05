@@ -18,15 +18,29 @@
 
 /** @packageDocumentation */
 
+// define type aliases for various native number types
+type Char = number;
+type SignedChar = number;
+type UnsignedChar = number;
+type Short = number;
+type UnsignedShort = number;
+type Int = number;
+type UnsignedInt = number;
+type Long = number;
+type UnsignedLong = number;
+type Float = number;
+type Double = number;
+
+
 /** Distance for search index. `l2`: sum((x_i - y_i)^2), `ip`: 1 - sum(x_i * y_i), `cosine`: 1 - sum(x_i * y_i) / norm(x) * norm(y). */
-export type SpaceName = 'l2' | 'ip' | 'cosine';
+export type SpaceName = "l2" | "ip" | "cosine";
 
 /** Searh result object. */
 export interface SearchResult {
   /** The disances of the nearest negihbors found. */
-  distances: number[],
+  distances: number[];
   /** The indices of the nearest neighbors found. */
-  neighbors: number[]
+  neighbors: number[];
 }
 
 /** Function for filtering elements by its labels. */
@@ -82,9 +96,9 @@ export class InnerProductSpace {
  * index = new BruteforceSearch('l2', numDimensions);
  * index.initIndex(maxElements);
  *
- * index.addPoint([0, 1, 2, 3, 4], 0);
- * index.addPoint([1, 2, 3, 4, 5], 1);
- * index.addPoint([3, 4, 5, 6, 6], 2);
+ * index.addPoint([0, 1, 2, 3, 4], 0, ...defaultParams.addPoint);
+ * index.addPoint([1, 2, 3, 4, 5], 1, ...defaultParams.addPoint);
+ * index.addPoint([3, 4, 5, 6, 6], 2, ...defaultParams.addPoint);
  *
  * const numNeighbors = 3;
  * const result = index.searchKnn([1, 4, 2, 3, 4], numNeighbors);
@@ -98,6 +112,10 @@ export class BruteforceSearch {
    * @param {number} numDimensions The dimensionality of data points.
    */
   constructor(spaceName: SpaceName, numDimensions: number);
+
+  /** is index initialized */
+  isIndexInitialized(): boolean;
+
   /**
    * initializes search index.
    * @param {number} maxElements The maximum number of data points.
@@ -109,20 +127,10 @@ export class BruteforceSearch {
    */
   readIndex(filename: string): Promise<boolean>;
   /**
-   * loads the search index.
-   * @param {string} filename The filename to read from.
-   */
-  readIndexSync(filename: string): void;
-  /**
    * saves the search index.
    * @param {string} filename The filename to save to.
    */
   writeIndex(filename: string): Promise<boolean>;
-  /**
-   * saves the search index.
-   * @param {string} filename The filename to save to.
-   */
-  writeIndexSync(filename: string): void;
   /**
    * adds a datum point to the search index.
    * @param {number[]} point The datum point to be added to the search index.
@@ -141,7 +149,11 @@ export class BruteforceSearch {
    * @param {FilterFunction} filter The function filters elements by its labels.
    * @return {SearchResult} The search result object consists of distances and indices of the nearest neighbors found.
    */
-  searchKnn(queryPoint: number[], numNeighbors: number, filter?: FilterFunction): SearchResult;
+  searchKnn(
+    queryPoint: number[],
+    numNeighbors: number,
+    filter: FilterFunction | undefined
+  ): SearchResult;
   /**
    * returns the maximum number of data points that can be indexed.
    * @return {numbers} The maximum number of data points that can be indexed.
@@ -169,9 +181,9 @@ export class BruteforceSearch {
  * index = new HierarchicalNSW('l2', numDimensions);
  * index.initIndex(maxElements, 16, 200, 100);
  *
- * index.addPoint([0, 1, 2, 3, 4], 0);
- * index.addPoint([1, 2, 3, 4, 5], 1);
- * index.addPoint([3, 4, 5, 6, 6], 2);
+ * index.addPoint([0, 1, 2, 3, 4], 0, ...defaultParams.addPoint);
+ * index.addPoint([1, 2, 3, 4, 5], 1, ...defaultParams.addPoint);
+ * index.addPoint([3, 4, 5, 6, 6], 2, ...defaultParams.addPoint);
  *
  * const numNeighbors = 3;
  * const result = index.searchKnn([1, 4, 2, 3, 4], numNeighbors);
@@ -193,39 +205,28 @@ export class HierarchicalNSW {
    * @param {number} randomSeed The seed value of random number generator (default: 100).
    * @param {boolean} allowReplaceDeleted The flag to replace deleted element when adding new element (default: false).
    */
-  initIndex(maxElements: number, m?: number, efConstruction?: number, randomSeed?: number, allowReplaceDeleted?: boolean): void;
-  /**
-   * Initialize index.
-   * @param {Object} __namedParameters The parameters for initIndex.
-   * @param {number} __namedParameters.maxElements The maximum number of elements.
-   * @param {number} __namedParameters.m The maximum number of outgoing connections on the graph (default: 16).
-   * @param {number} __namedParameters.efConstruction The parameter that controls speed/accuracy trade-off during the index construction (default: 200).
-   * @param {number} __namedParameters.randomSeed The seed value of random number generator (default: 100).
-   * @param {boolean} __namedParameters.allowReplaceDeleted The flag to replace deleted element when adding new element (default: false).
-   */
-  initIndex({ maxElements, m = 16, efConstruction = 200,  randomSeed = 100, allowReplaceDeleted = false } : { maxElements: number, m?: number, efConstruction?: number, randomSeed?: number, allowReplaceDeleted?: boolean }): void;
-  /**
-   * loads the search index.
-   * @param {string} filename The filename to read from.
-   * @param {boolean} allowReplaceDeleted The flag to replace deleted element when adding new element (default: false).
-   */
-  readIndex(filename: string, allowReplaceDeleted?: boolean): Promise<boolean>;
+  initIndex(
+    maxElements: number,
+    m?: number,
+    efConstruction?: number,
+    randomSeed?: number,
+    allowReplaceDeleted?: boolean
+  ): void;
+
+  /** is index initialized */
+  isIndexInitialized(): boolean;
+
   /**
    * loads the search index.
    * @param {string} filename The filename to read from.
    * @param {boolean} allowReplaceDeleted The flag to replace deleted element when adding new element (default: false).
    */
-  readIndexSync(filename: string, allowReplaceDeleted?: boolean): void;
+  readIndex(filename: string, allowReplaceDeleted: boolean): Promise<boolean>;
   /**
    * saves the search index.
    * @param {string} filename The filename to save to.
    */
   writeIndex(filename: string): Promise<boolean>;
-  /**
-   * saves the search index.
-   * @param {string} filename The filename to save to.
-   */
-  writeIndexSync(filename: string): void;
   /**
    * resizes the search index.
    * @param {number} newMaxElements The new maximum number of data points.
@@ -237,7 +238,7 @@ export class HierarchicalNSW {
    * @param {number} label The index of the datum point to be added.
    * @param {boolean} replaceDeleted The flag to replace a deleted element (default: false).
    */
-  addPoint(point: number[], label: number, replaceDeleted?: boolean): void;
+  addPoint(point: number[], label: number, replaceDeleted: boolean): void;
   /**
    * marks the element as deleted. The marked element does not appear on the search result.
    * @param {number} label The index of the datum point to be marked.
@@ -255,7 +256,11 @@ export class HierarchicalNSW {
    * @param {FilterFunction} filter The function filters elements by its labels.
    * @return {SearchResult} The search result object consists of distances and indices of the nearest neighbors found.
    */
-  searchKnn(queryPoint: number[], numNeighbors: number, filter?: FilterFunction): SearchResult;
+  searchKnn(
+    queryPoint: number[],
+    numNeighbors: number,
+    filter: FilterFunction | undefined
+  ): SearchResult;
   /**
    * returns a list of all elements' indices.
    * @return {number[]} The list of indices.
@@ -293,3 +298,23 @@ export class HierarchicalNSW {
    */
   setEf(ef: number): void;
 }
+
+export class EmscriptenFileSystemManager {
+  constructor();
+  static initializeFileSystem(fsType:'NODEFS' | 'IDBFS'): void;
+  static isInitialized(): boolean;
+}
+
+
+export interface HnswlibModule {
+  normalizePoint(vec: number[]): number[];
+  syncFs: (read: boolean) => Promise<boolean>;
+  L2Space: typeof L2Space
+  InnerProductSpace: typeof InnerProductSpace
+  BruteforceSearch: typeof BruteforceSearch
+  HierarchicalNSW: typeof HierarchicalNSW
+  EmscriptenFileSystemManager: typeof EmscriptenFileSystemManager
+}
+declare function factory(args?: Partial<EmscriptenModule> ): Promise<HnswlibModule>;
+export default factory;
+export type Factory = typeof factory;
