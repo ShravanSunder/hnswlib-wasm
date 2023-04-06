@@ -2,7 +2,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "target": "ESNext",
-    "lib": ["esnext", "esnext.asynciterable", "ESNext.Promise"],
+    "lib": ["esnext", "esnext.asynciterable", "ESNext.Promise", "dom"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,

@@ -1,3 +1,4 @@
+import {IdbfsFileStore} from "../dist/hnswlib";
 
 
 export const testErrors = {
@@ -21,7 +22,7 @@ export type testErrorTypes = keyof typeof testErrors;
 
 
 export const adaDimensions = 1536 as const;
-export const createVectorData = (numOfVec: number = 100, dimensions: number = adaDimensions) => {
+export const createVectorData = (numOfVec = 100, dimensions: number = adaDimensions) => {
   const vectors: Float32Array[] = [];
   const labels: number[] = [];
   
@@ -33,3 +34,41 @@ export const createVectorData = (numOfVec: number = 100, dimensions: number = ad
   
   return {vectors, labels};
 }
+
+
+export type IdbFileData = {
+  timestamp: number;
+  mode: string;
+  contents: Uint8Array;
+};
+
+export const getIdbFileList = async (request: IDBOpenDBRequest): Promise<string[]> => {
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => {
+      const db: IDBDatabase = request.result;
+      const transaction = db.transaction(IdbfsFileStore, "readonly");
+      const fileDataStore = transaction.objectStore(IdbfsFileStore);
+
+      const fileList: string[] = [];
+      const cursorRequest = fileDataStore.openCursor();
+
+      cursorRequest.onsuccess = (event: Event) => {
+        const cursor: IDBCursorWithValue | null = (event.target as IDBRequest).result;
+        if (cursor) {
+          fileList.push(cursor.key.toString());
+          cursor.continue();
+        } else {
+          resolve(fileList);
+        }
+      };
+
+      cursorRequest.onerror = (event: Event) => {
+        reject(new Error("Error while retrieving file list from IDBFS."));
+      };
+    };
+
+    request.onerror = (event: Event) => {
+      reject(new Error("Error while opening IndexedDB."));
+    };
+  });
+};

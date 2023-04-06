@@ -321,6 +321,11 @@ export class EmscriptenFileSystemManager {
 
 export interface HnswlibModule {
   normalizePoint(vec: number[]): number[];
+  /**
+   * Syncs the 
+   * @param read read (bool) – true to initialize Emscripten’s file system data with the data from the file system’s persistent source, and false to save Emscripten`s file system data to the file system’s persistent source.
+   * @returns 
+   */
   syncFs: (read: boolean) => Promise<boolean>;
   L2Space: typeof L2Space
   InnerProductSpace: typeof InnerProductSpace
@@ -328,6 +333,7 @@ export interface HnswlibModule {
   HierarchicalNSW: typeof HierarchicalNSW
   EmscriptenFileSystemManager: typeof EmscriptenFileSystemManager
 }
+
 declare function factory(args?: Partial<EmscriptenModule> ): Promise<HnswlibModule>;
 export default factory;
 export type Factory = typeof factory;

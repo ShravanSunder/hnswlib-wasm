@@ -15,30 +15,30 @@ describe("BruteforceSearch", () => {
   describe("#constructor", () => {
     it("throws an error if no arguments are given", () => {
       expect(() => {
-        // @ts-expect-error
+        // @ts-expect-error for testing
         new hnswlib.BruteforceSearch();
       }).toThrow("Tried to invoke ctor of BruteforceSearch with invalid number of parameters (0) - expected (2) parameters instead!");
     });
 
     it("throws an error if given a non-String object to first argument", () => {
       expect(() => {
-        // @ts-expect-error
+        // @ts-expect-error for testing
         new hnswlib.BruteforceSearch(1, 3);
       }).toThrow("Cannot pass non-string to std::string");
     });
 
     it("throws an error if given a non-Number object to second argument", () => {
       expect(() => {
-        // @ts-expect-error
+        // @ts-expect-error for testing
         new hnswlib.BruteforceSearch("l2", "3");
       }).toThrow(testErrors.unsignedIntArgument);
     });
 
     it('throws an error if given a String that is neither "l2", "ip", nor "cosine" to first argument', () => {
       expect(() => {
-        // @ts-expect-error
+        // @ts-expect-error for testing
         new hnswlib.BruteforceSearch("coss", 3);
-      }).toThrow('invalid space should be expected l2, ip, or cosine');
+      }).toThrow(/invalid space should be expected l2, ip, or cosine/);
     });
   });
 
@@ -51,19 +51,19 @@ describe("BruteforceSearch", () => {
     it("isIndexInitialized is false before init", () => {
       expect(
         index.isIndexInitialized()
-      ).toBeFalse()
+      ).toBe(false)
     });
 
     it("throws an error if no arguments are given", () => {
       expect(() => {
-        // @ts-expect-error
+        // @ts-expect-error for testing
         index.initIndex();
       }).toThrow(testErrors.arugmentCount);
     });
 
     it("throws an error if given a non-Number argument", () => {
       expect(() => {
-        // @ts-expect-error
+        // @ts-expect-error for testing
         index.initIndex("5", 16, 200, 1, 1);
       }).toThrow(testErrors.arugmentCount);
     });
@@ -72,7 +72,7 @@ describe("BruteforceSearch", () => {
       index.initIndex(5, );
       expect(
         index.isIndexInitialized()
-      ).toBeTrue();
+      ).toBe(true);
     });
 
   });
@@ -126,7 +126,7 @@ describe("BruteforceSearch", () => {
 
     it("throws an error if given a non-Array object to first argument", () => {
       expect(() => {
-        // @ts-expect-error
+        // @ts-expect-error for testing
         index.addPoint("[1, 2, 3]", 0);
       }).toThrow(testErrors.vectorArgument);
     });
@@ -162,7 +162,7 @@ describe("BruteforceSearch", () => {
 
     it("throws an error if given a non-Number argument", () => {
       expect(() => {
-        // @ts-expect-error
+        // @ts-expect-error for testing
         index.removePoint("0");
       }).toThrow(testErrors.unsignedIntArgument);
     });
@@ -201,21 +201,21 @@ describe("BruteforceSearch", () => {
 
       it("throws an error if no arguments are given", () => {
         expect(() => {
-          // @ts-expect-error
+          // @ts-expect-error for testing
           index.searchKnn();
         }).toThrow(testErrors.arugmentCount);
       });
 
       it("throws an error if given a non-Array object to first argument", () => {
         expect(() => {
-          // @ts-expect-error
+          // @ts-expect-error for testing
           index.searchKnn("[1, 2, 3]", 2);
         }).toThrow(testErrors.arugmentCount);
       });
 
       it("throws an error if given a non-Function object to third argument", () => {
         expect(() => {
-          // @ts-expect-error
+          // @ts-expect-error for testing
           index.searchKnn([1, 2, 3], 2, "fnc");
         }).toThrow(testErrors.isNotFunction);
       });

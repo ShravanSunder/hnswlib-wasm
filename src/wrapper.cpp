@@ -138,9 +138,9 @@ namespace emscripten {
               console.error('EmscriptenFileSystemManager: Error syncing FS:', err);
               throw new Error('EmscriptenFileSystemManager: Error syncing FS: ' + err);
             }
-            else {
-              console.log('EmscriptenFileSystemManager: FS synced successfully');
-            }
+            // else {
+            //   console.log('EmscriptenFileSystemManager: FS synced successfully');
+            // }
           });
           _free(allocatedDir);
           }, fsTypeCStr, virtualDirCStr);

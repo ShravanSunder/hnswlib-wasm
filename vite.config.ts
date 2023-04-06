@@ -17,8 +17,12 @@ import vitest from 'eslint-plugin-vitest'
 
 export default defineConfig({
   plugins: [
-    checker({typescript:true}),
-    eslint(),
+    checker({
+      typescript: { tsconfigPath: "./tsconfig.build.json" },
+    }),
+    eslint({
+      include: ['./lib/**/*.ts']
+    }),
     wasm(),
     topLevelAwait(),
     viteStaticCopy({
@@ -32,14 +36,15 @@ export default defineConfig({
           dest: './',
         },
         {
-          src: './lib/hnswlib.d.ts',
-          dest: './lib',
+          src: './lib/hnswlib-wasm.d.ts',
+          dest: './',
         }
       ]
     }), 
     tsconfigPaths(),
     dts({
       insertTypesEntry: true,
+      tsConfigFilePath: './tsconfig.build.json',
     })
   ],
   optimizeDeps: {

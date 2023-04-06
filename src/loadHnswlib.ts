@@ -1,11 +1,7 @@
 import "./hnswlib.mjs";
-import { type Factory } from "./hnswlib";
+import factory, { type Factory } from "./hnswlib-wasm";
 import { HnswlibModule } from "./";
 
-const isNode =
-  typeof process !== "undefined" &&
-  process?.versions != null &&
-  process?.versions?.node != null;
 
 let library: Awaited<ReturnType<Factory>>;
 type InputFsType = "NODEFS" | "IDBFS" | undefined;
@@ -39,19 +35,19 @@ export const loadHnswlib = async (
   inputFsType?: InputFsType
 ): Promise<HnswlibModule> => {
   try {
-    let factory: Factory;
 
-    // @ts-ignore
+    // @ts-expect-error - hnswlib can be a global variable in the browser
     if (typeof hnswlib !== "undefined" && hnswlib !== null ) {
-      // @ts-ignore
+      // @ts-expect-error - hnswlib can be a global variable in the browser
       const lib = hnswlib();
       if (lib != null)
         return lib;
     }
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     const temp = (await import("./hnswlib.mjs"));
-    factory = temp.default;
+    const factory = temp.default;
     
 
     if (!library) {
