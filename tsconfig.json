@@ -1,13 +1,13 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
-    "target": "esnext",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "target": "ESNext",
+    "lib": ["esnext", "esnext.asynciterable", "ESNext.Promise"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
+    "noEmit": false,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "node",
@@ -16,14 +16,12 @@
     "jsx": "preserve",
     "types": [ 
       "vitest/importMeta"
-      ,"jest"
     ],
-    "incremental": true,
+    "incremental": false,
     "paths": {
       "~lib/*": ["./lib/*"],
       "~test/*": ["./test/*"],
     }
   },
-  "include": ["lib/**/*.ts", "lib/**/*.d.ts", "src/**/*.ts", "test/**/*"],
-  "files": ["node_modules/jest-extended/types/index.d.ts", ]
+  "include": ["lib/**/*.ts", "lib/**/*.d.ts", "src/**/*.ts", "src/**/*.d.ts", "test/**/*"],
 }

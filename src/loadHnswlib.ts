@@ -41,19 +41,18 @@ export const loadHnswlib = async (
 ): Promise<HnswlibModule> => {
   try {
     let factory: Factory;
+
+    // @ts-ignore
+    if (typeof hnswlib !== "undefined" && hnswlib !== null ) {
+      // @ts-ignore
+      const lib = hnswlib();
+      if (lib != null)
+        return lib;
+    }
+
     if (isNode) {
-      if (typeof document !== "undefined") {
-        // this is electron
-        const temp = (await import("./hnswlib.js")) as any;
-        const temp2 = await temp?.();
-        const temp3 = temp2 ? esmModule : esmModule.default;
-        console.log(temp, temp2, temp3, esmModule);
-        factory = temp2
-      }
-      // else {
         const modulePath = require.resolve("./hnswlib.js");
         factory = require(modulePath);
-      // }
     } else {
       const temp = (await import("./hnswlib.js"));
       factory = temp.default;
