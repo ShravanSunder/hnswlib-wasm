@@ -7,7 +7,7 @@
     "skipLibCheck": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
-    "noEmit": false,
+    "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "node",
@@ -15,7 +15,8 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "types": [ 
-      "vitest/importMeta"
+      "vitest/importMeta",
+      "jest"
     ],
     "incremental": false,
     "paths": {
@@ -24,4 +25,5 @@
     }
   },
   "include": ["lib/**/*.ts", "lib/**/*.d.ts", "src/**/*.ts", "src/**/*.d.ts", "test/**/*"],
+  "files": ["node_modules/jest-extended/types/index.d.ts", ]
 }

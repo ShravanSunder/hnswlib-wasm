@@ -36,7 +36,6 @@ export default defineConfig({
     nodeResolve({ browser: true }),
     tsconfigPaths(),
     dts({
-      libFolderPath: './lib',
       insertTypesEntry: true,
     })
   ],
@@ -53,7 +52,7 @@ export default defineConfig({
       name: 'hnswlib-wasm',
       // the proper extensions will be added
       fileName: 'hnswlib-wasm',
-      //formats: ['cjs', 'umd']
+      formats: ['es', 'cjs', 'umd']
     },
     commonjsOptions: {
       include: [],

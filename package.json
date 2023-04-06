@@ -1,6 +1,6 @@
 {
   "name": "hnswlib-wasm",
-  "version": "0.0.5-beta.1",
+  "version": "0.0.5-beta.2",
   "description": "typescript and wasm bindings for Hnswlib",
   "main": "./dist/hnswlib-wasm.umd.cjs",
   "module": "./dist/hnswlib-wasm.js",
@@ -27,9 +27,9 @@
   ],
   "scripts": {
     "prepare": "husky install",
-    "build:cpp": "make",
+    "build:emcc": "make",
     "build": "yarn vite build",
-    "build:all": "yarn build:cpp && yarn build",
+    "build:all": "yarn build:emcc && yarn build",
     "test": "jest",
     "publish:pre": "npm version prerelease --git-tag-version false && npm publish --tag next"
   },
