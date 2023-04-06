@@ -1,6 +1,6 @@
 
 import { resolve } from 'path'
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
 import commonjs from 'vite-plugin-commonjs'
@@ -16,7 +16,6 @@ export default defineConfig({
   plugins: [
     wasm(),
     topLevelAwait(),
-    //commonjs(),
     viteStaticCopy({
       targets: [
         {
@@ -33,15 +32,12 @@ export default defineConfig({
         }
       ]
     }), 
-    nodeResolve({ browser: true }),
     tsconfigPaths(),
     dts({
       insertTypesEntry: true,
     })
   ],
   optimizeDeps: {
-    include: [],
-    exclude: [ ]
   },
   build: {
     minify: false,
@@ -51,8 +47,8 @@ export default defineConfig({
       entry: resolve(__dirname, 'lib/index.ts'),
       name: 'hnswlib-wasm',
       // the proper extensions will be added
-      fileName: 'hnswlib-wasm',
-      formats: ['es', 'cjs', 'umd']
+      fileName: 'hnswlib',
+      formats: ['es']
     },
     commonjsOptions: {
       include: [],
@@ -63,9 +59,17 @@ export default defineConfig({
       // into your library
       external: [],
     },
-  },
+  }, 
   test: {
-    setupFiles: "./vitest.setup.ts"
-    
+    globals: true,
+    setupFiles: ['./vitest.setup.ts'],
+    environment: 'happy-dom',
+    // browser: {
+    //   enabled: true,
+    //   name: 'chromium',
+    //   headless: true,
+    //   provider: 'playwright'
+    // }
+
   }
 })

@@ -98,33 +98,41 @@ namespace emscripten {
 
       if (!initialized_) {
         EM_ASM({
+          console.log('wrapper', 'try1');
           let type = UTF8ToString($0);
           let directory = UTF8ToString($1);
           let allocatedDir = _malloc(directory.length + 1);
           stringToUTF8(directory, allocatedDir, directory.length + 1);
           let jsAllocatedDir = UTF8ToString(allocatedDir);
           console.log('allocated dir', jsAllocatedDir);
+          console.log('wrapper', 'try2', type, directory, allocatedDir, jsAllocatedDir);
+          console.log('wrapper',window.indexedDB);
 
           if (type == "IDBFS") {
             FS.mkdir(jsAllocatedDir);
             FS.mount(IDBFS, {}, jsAllocatedDir);
             console.log('EmscriptenFileSystemManager: Mounting IDBFS filesystem...');
           }
-          else if (type == "NODEFS") {
-            if (!FS.analyzePath(jsAllocatedDir).exists) {
-              FS.mkdir(jsAllocatedDir);
-            }
-             FS.mount(NODEFS, { root: './tmp' }, jsAllocatedDir);
-            console.log('EmscriptenFileSystemManager: Mounting NODEFS   filesystem...');
-          }
-          else if (type == "WORKERFS") {
-            FS.mkdir(jsAllocatedDir);
-            FS.mount(WORKERFS, { hnswlibBlobs }, jsAllocatedDir);
-          }
+          // // FUTURE SUPPORT FOR NODEFS
+          // if (type == "NODEFS") {
+          //   console.log('wrapper', 'NODEFS');
+          //   if (!FS.analyzePath(jsAllocatedDir).exists) {
+          //     console.log('wrapper', 'NODEFS2');
+          //     FS.mkdir(jsAllocatedDir);
+          //   }
+          //   console.log('wrapper', 'NODEFS3');
+          //   FS.mount(NODEFS, { root: './tmp' }, jsAllocatedDir);
+          //   console.log('EmscriptenFileSystemManager: Mounting NODEFS   filesystem...');
+          // }
+          // else if (type == "WORKERFS") {
+          //   FS.mkdir(jsAllocatedDir);
+          //   FS.mount(WORKERFS, { hnswlibBlobs }, jsAllocatedDir);
+          // }
           else {
              throw new Error('Unsupported filesystem type, only NODEFS, IDBFS: ' + type);
           }
 
+          // // PRINT STATEMENT FOR DEBUGGING
           // var fs = require('fs');
           // fs.writeFileSync('./tmp/foobar.txt', 'yeehaw',{encoding:'utf8',flag : 'w'});
 
@@ -143,6 +151,7 @@ namespace emscripten {
 
         initialized_ = true;
 
+        // // PRINT STATEMENT FOR DBUGGING
         // printf("Syncing FS 1...\n");
         // FILE* fp = fopen("/hnswlib/abcdefg.txt", "w");
         // if (fp) {

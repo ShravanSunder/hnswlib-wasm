@@ -1,8 +1,8 @@
 
-import { defaultParams, HierarchicalNSW, HnswlibModule,  loadHnswlib } from "~lib/index";
+import { defaultParams, HierarchicalNSW, HnswlibModule,  loadHnswlib } from "../dist/hnswlib";
 import { adaDimensions, createVectorData } from "~test/testHelpers";
 import { testErrors } from "./testHelpers";
-import { assert, describe, expect, it, beforeAll, afterAll, afterEach } from 'vitest'
+import { assert, describe, expect, it, beforeAll, afterAll, afterEach, beforeEach, vi } from 'vitest'
 
 
 describe("hnswlib.HierarchicalNSW", () => {

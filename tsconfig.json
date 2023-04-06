@@ -16,7 +16,6 @@
     "jsx": "preserve",
     "types": [ 
       "vitest/importMeta",
-      "jest"
     ],
     "incremental": false,
     "paths": {
@@ -25,5 +24,4 @@
     }
   },
   "include": ["lib/**/*.ts", "lib/**/*.d.ts", "src/**/*.ts", "src/**/*.d.ts", "test/**/*"],
-  "files": ["node_modules/jest-extended/types/index.d.ts", ]
 }

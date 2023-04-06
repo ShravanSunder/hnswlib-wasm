@@ -1,6 +1,5 @@
-import "./hnswlib.js";
+import "./hnswlib.mjs";
 import { type Factory } from "./hnswlib";
-import * as esmModule from "./hnswlib.js";
 import { HnswlibModule } from "./";
 
 const isNode =
@@ -15,7 +14,7 @@ const initializeFileSystemAsync = async (
   inputFsType?: InputFsType
 ): Promise<void> => {
   const fsType =
-    inputFsType == null ? (isNode ? "NODEFS" : "IDBFS") : inputFsType;
+    inputFsType == null ? "IDBFS" : inputFsType;
   const EmscriptenFileSystemManager = library.EmscriptenFileSystemManager;
   return new Promise(function (resolve, reject) {
     if (EmscriptenFileSystemManager.isInitialized()) {
@@ -50,13 +49,10 @@ export const loadHnswlib = async (
         return lib;
     }
 
-    if (isNode) {
-        const modulePath = require.resolve("./hnswlib.js");
-        factory = require(modulePath);
-    } else {
-      const temp = (await import("./hnswlib.js"));
-      factory = temp.default;
-    }
+    // @ts-ignore
+    const temp = (await import("./hnswlib.mjs"));
+    factory = temp.default;
+    
 
     if (!library) {
       library = await factory();
