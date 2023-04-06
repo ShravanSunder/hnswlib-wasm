@@ -1,6 +1,6 @@
 
 import {  BruteforceSearch, HnswlibModule, loadHnswlib } from "~lib/index";
-import { testErrors } from "./testErrors";
+import { testErrors } from "./testHelpers";
 
 describe("BruteforceSearch", () => {
   let hnswlib: HnswlibModule;

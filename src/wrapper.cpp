@@ -53,7 +53,7 @@ namespace emscripten {
 
     /// @brief This function normalizes the point in place, but cheats and uses the same input parameter vector.  It is set as const due to bindings
     /// @param vec 
-    void normalizePoint(const std::vector<float>& vec) {
+    void normalizePoints(const std::vector<float>& vec) {
       try {
         std::vector<float>& result = const_cast<std::vector<float>&>(vec);
         const size_t dim = result.size();
@@ -69,8 +69,7 @@ namespace emscripten {
 
   }  // namespace internal
 
-
-  std::vector<float> normalizePointPure(const std::vector<float>& vec) {
+  std::vector<float> normalizePointsPure(const std::vector<float>& vec) {
     try {
       std::vector<float> result(vec);
       const size_t dim = result.size();
@@ -376,7 +375,7 @@ namespace emscripten {
 
       std::vector<float>& mutableVec = const_cast<std::vector<float>&>(vec);
       if (normalize_) {
-        internal::normalizePoint(mutableVec);
+        internal::normalizePoints(mutableVec);
       }
 
       if (index_->cur_element_count == index_->maxelements_) {
@@ -426,7 +425,7 @@ namespace emscripten {
       std::vector<float>& mutableVec = const_cast<std::vector<float>&>(vec);
 
       if (normalize_) {
-        internal::normalizePoint(mutableVec);
+        internal::normalizePoints(mutableVec);
       }
 
       std::priority_queue<std::pair<float, size_t>> knn =
@@ -574,7 +573,6 @@ namespace emscripten {
       }
     }
 
-
     void addPoint(const std::vector<float>& vec, uint32_t idx, bool replace_deleted = false) {
       if (index_ == nullptr) {
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
@@ -587,7 +585,7 @@ namespace emscripten {
       std::vector<float>& mutableVec = const_cast<std::vector<float>&>(vec);
 
       if (normalize_) {
-        internal::normalizePoint(mutableVec);
+        internal::normalizePoints(mutableVec);
       }
 
       if (index_->cur_element_count == index_->max_elements_) {
@@ -601,6 +599,43 @@ namespace emscripten {
         throw std::runtime_error("Hnswlib Error: " + std::string(e.what()));
       }
     }
+    void addItems(const std::vector<std::vector<float>>& vec, const std::vector<uint32_t>& idVec, bool replace_deleted = false) {
+      if (index_ == nullptr) {
+        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
+      }
+
+      if (vec.size() != idVec.size()) {
+        throw std::runtime_error("The number of vectors and ids must be the same.");
+      }
+
+      if (vec.size() <= 0) {
+        throw std::runtime_error("The number of vectors and ids must be greater than 0.");
+      }
+
+      if (index_->cur_element_count + idVec.size() > index_->max_elements_) {
+        throw std::runtime_error("The maximum number of elements has been reached in index, please increased the index max_size.  max_size: " + std::to_string(index_->max_elements_));
+      }
+
+      try {
+        for (size_t i = 0; i < vec.size(); ++i) {
+          if (vec[i].size() != dim_) {
+            throw std::invalid_argument("Invalid vector size at index " + std::to_string(i) + ". Must be equal to the dimension of the space. The dimension of the space is " + std::to_string(this->dim_) + ".");
+          }
+
+          std::vector<float>& mutableVec = const_cast<std::vector<float>&>(vec[i]);
+
+          if (normalize_) {
+            internal::normalizePoints(mutableVec);
+          }
+
+          index_->addPoint(reinterpret_cast<void*>(mutableVec.data()), static_cast<hnswlib::labeltype>(idVec[i]), replace_deleted);
+        }
+      }
+      catch (const std::exception& e) {
+        throw std::runtime_error("Could not addItems " + std::string(e.what()));
+      }
+    }
+
 
     int getMaxElements() {
       if (index_ == nullptr) {
@@ -626,6 +661,23 @@ namespace emscripten {
 
       index_->markDelete(static_cast<hnswlib::labeltype>(idx));
     }
+
+
+    void markDeleteItems(const std::vector<uint32_t>& labelsVec) {
+      if (index_ == nullptr) {
+        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
+      }
+
+      try {
+        for (const hnswlib::labeltype& label : labelsVec) {
+          index_->markDelete(static_cast<hnswlib::labeltype>(label));
+        }
+      }
+      catch (const std::exception& e) {
+        throw std::runtime_error("Could not markDeleteItems " + std::string(e.what()));
+      }
+    }
+
 
     void unmarkDelete(uint32_t idx) {
       if (index_ == nullptr) {
@@ -661,7 +713,7 @@ namespace emscripten {
 
       std::vector<float>& mutableVec = const_cast<std::vector<float>&>(vec);
       if (normalize_) {
-        internal::normalizePoint(mutableVec);
+        internal::normalizePoints(mutableVec);
       }
 
       std::priority_queue<std::pair<float, size_t>> knn =
@@ -723,7 +775,7 @@ namespace emscripten {
   EMSCRIPTEN_BINDINGS(hnswlib) {
     using namespace emscripten;
 
-    function("normalizePoint", &normalizePointPure);
+    function("normalizePoint", &normalizePointsPure);
 
     emscripten::class_<L2Space>("L2Space")
       .constructor<uint32_t>()
@@ -762,9 +814,11 @@ namespace emscripten {
       .function("resizeIndex", &HierarchicalNSW::resizeIndex)
       .function("getPoint", &HierarchicalNSW::getPoint)
       .function("addPoint", &HierarchicalNSW::addPoint)
+      .function("addItems", &HierarchicalNSW::addItems)
       .function("getMaxElements", &HierarchicalNSW::getMaxElements)
       .function("getIdsList", &HierarchicalNSW::getIdsList)
       .function("markDelete", &HierarchicalNSW::markDelete)
+      .function("markDeleteItems", &HierarchicalNSW::markDeleteItems)
       .function("unmarkDelete", &HierarchicalNSW::unmarkDelete)
       .function("getCurrentCount", &HierarchicalNSW::getCurrentCount)
       .function("getNumDimensions", &HierarchicalNSW::getNumDimensions)

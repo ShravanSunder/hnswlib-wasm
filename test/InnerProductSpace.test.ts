@@ -1,5 +1,5 @@
 import {  BruteforceSearch, HnswlibModule, InnerProductSpace, loadHnswlib } from "~lib/index";
-import { testErrors} from "./testErrors";
+import { testErrors} from "./testHelpers";
 
 describe("InnerProductSpace", () => {
   let hnswlib: HnswlibModule;

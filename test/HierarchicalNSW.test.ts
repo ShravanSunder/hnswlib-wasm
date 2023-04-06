@@ -1,6 +1,7 @@
 
 import { defaultParams, HierarchicalNSW, HnswlibModule,  loadHnswlib } from "~lib/index";
-import { testErrors } from "./testErrors";
+import { adaDimensions, createVectorData } from "~test/testHelpers";
+import { testErrors } from "./testHelpers";
 
 
 describe("hnswlib.HierarchicalNSW", () => {
@@ -11,6 +12,10 @@ describe("hnswlib.HierarchicalNSW", () => {
     // Instantiate the Emscripten module
     hnswlib = await loadHnswlib();
     index = new hnswlib.HierarchicalNSW("l2", 3);
+  });
+
+  afterEach(() => {
+    process.stdout.write("");
   });
 
   it("loads the class", () => {
@@ -545,10 +550,11 @@ describe("hnswlib.HierarchicalNSW", () => {
     const filename = 'testindex.dat';
     beforeAll(async () => {
       index = new hnswlib.HierarchicalNSW("ip", 3);
-      const fs = await import('fs')
-      if (fs.existsSync(localIndexLocation)) {
-        await fs.unlinkSync(localIndexLocation)
-      }
+      console.log('dfsfs');
+      //const fs = await import('fs')
+      // if (fs.existsSync(localIndexLocation)) {
+      //   await fs.unlinkSync(localIndexLocation)
+      // }
     });
 
     beforeEach(() => {
@@ -574,4 +580,40 @@ describe("hnswlib.HierarchicalNSW", () => {
       expect(index.getPoint(0)).toMatchObject([1, 2, 3]);
     });
   });
+
+  describe('when a large block of data and dimensions is loaded', () => { 
+    const localIndexLocation = './tmp/testindex.dat';
+    const filename = 'testindex.dat';
+    const indexSize = 1000;
+    const testVectorData = createVectorData(indexSize-1, adaDimensions);
+    beforeAll(async () => {
+      index = new hnswlib.HierarchicalNSW("l2", adaDimensions);
+      const fs = await import('fs')
+      if (fs.existsSync(localIndexLocation)) {
+        await fs.unlinkSync(localIndexLocation)
+      }
+    });
+
+    it(`when loading ${indexSize} points, then they can be loaded and removed`, () => {
+      index.initIndex(indexSize, ...defaultParams.initIndex);
+      index.addItems(testVectorData.vectors, testVectorData.labels, ...defaultParams.addPoint);
+      const label = testVectorData.labels[1];
+      const point = testVectorData.vectors[1];
+      expect(index.getPoint(label)).toMatchObject(point);
+      //index.writeIndex(filename);
+    });
+
+    it(`when loading ${indexSize*10} points, then they can be loaded and removed`, () => {
+      index.initIndex(indexSize, ...defaultParams.initIndex);
+      index.addItems(testVectorData.vectors, testVectorData.labels, ...defaultParams.addPoint);
+      index.addItems(testVectorData.vectors, testVectorData.labels, ...defaultParams.addPoint);
+      index.addItems(testVectorData.vectors, testVectorData.labels, ...defaultParams.addPoint);
+      index.addItems(testVectorData.vectors, testVectorData.labels, ...defaultParams.addPoint);
+      const label = testVectorData.labels[1];
+      const point = testVectorData.vectors[1];
+      expect(index.getPoint(label)).toMatchObject(point);
+      //index.writeIndex(filename);
+    });
+
+   })
 });

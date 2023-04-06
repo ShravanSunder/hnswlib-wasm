@@ -133,10 +133,10 @@ export class BruteforceSearch {
   writeIndex(filename: string): Promise<boolean>;
   /**
    * adds a datum point to the search index.
-   * @param {number[]} point The datum point to be added to the search index.
+   * @param {Float32Array | number[]} point The datum point to be added to the search index.
    * @param {number} label The index of the datum point to be added.
    */
-  addPoint(point: number[], label: number): void;
+  addPoint(point: Float32Array | number[], label: number): void;
   /**
    * removes the datum point from the search index.
    * @param {number} label The index of the datum point to be removed.
@@ -144,13 +144,13 @@ export class BruteforceSearch {
   removePoint(label: number): void;
   /**
    * returns `numNeighbors` closest items for a given query point.
-   * @param {number[]} queryPoint The query point vector.
+   * @param {Float32Array | number[]} queryPoint The query point vector.
    * @param {number} numNeighbors The number of nearest neighbors to search for.
    * @param {FilterFunction} filter The function filters elements by its labels.
    * @return {SearchResult} The search result object consists of distances and indices of the nearest neighbors found.
    */
   searchKnn(
-    queryPoint: number[],
+    queryPoint: Float32Array | number[],
     numNeighbors: number,
     filter: FilterFunction | undefined
   ): SearchResult;
@@ -234,16 +234,29 @@ export class HierarchicalNSW {
   resizeIndex(newMaxElements: number): void;
   /**
    * adds a datum point to the search index.
-   * @param {number[]} point The datum point to be added to the search index.
+   * @param {Float32Array | number[]} point The datum point to be added to the search index.
    * @param {number} label The index of the datum point to be added.
    * @param {boolean} replaceDeleted The flag to replace a deleted element (default: false).
    */
-  addPoint(point: number[], label: number, replaceDeleted: boolean): void;
+  addPoint(point: Float32Array | number[], label: number, replaceDeleted: boolean): void;
+
+  /**
+   * adds a datum point to the search index.
+   * @param {Float32Array[] | number[][]} items The datum array to be added to the search index.
+   * @param {number} labels The index array of the datum array to be added.
+   * @param {boolean} replaceDeleted The flag to replace a deleted element (default: false).
+   */
+  addItems(items: Float32Array[] | number[][], labels: number[], replaceDeleted: boolean): void;
   /**
    * marks the element as deleted. The marked element does not appear on the search result.
    * @param {number} label The index of the datum point to be marked.
    */
   markDelete(label: number): void;
+  /**
+   * marks the element as deleted. The marked element does not appear on the search result.
+   * @param {number} labels The index of the datum point to be marked.
+   */
+  markDeleteItems(labels: number[]): void;
   /**
    * unmarks the element as deleted.
    * @param {number} label The index of the datum point to be unmarked.
@@ -251,13 +264,13 @@ export class HierarchicalNSW {
   unmarkDelete(label: number): void;
   /**
    * returns `numNeighbors` closest items for a given query point.
-   * @param {number[]} queryPoint The query point vector.
+   * @param {Float32Array | number[]} queryPoint The query point vector.
    * @param {number} numNeighbors The number of nearest neighbors to search for.
    * @param {FilterFunction} filter The function filters elements by its labels.
    * @return {SearchResult} The search result object consists of distances and indices of the nearest neighbors found.
    */
   searchKnn(
-    queryPoint: number[],
+    queryPoint: Float32Array | number[],
     numNeighbors: number,
     filter: FilterFunction | undefined
   ): SearchResult;
@@ -271,7 +284,7 @@ export class HierarchicalNSW {
    * @param {number} label The index of the datum point.
    * @return {number[]} The datum point vector.
    */
-  getPoint(label: number): number[];
+  getPoint(label: number): Float32Array | number[];
   /**
    * returns the maximum number of data points that can be indexed.
    * @return {numbers} The maximum number of data points that can be indexed.

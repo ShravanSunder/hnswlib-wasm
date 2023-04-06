@@ -1,4 +1,4 @@
-import { testErrors } from "./testErrors";
+import { testErrors } from "./testHelpers";
 import {  BruteforceSearch, HnswlibModule, L2Space, loadHnswlib } from "~lib/index";
 
 describe("L2Space", () => {

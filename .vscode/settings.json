@@ -6,6 +6,7 @@
     "stdexcept": "cpp",
     "exception": "cpp",
     "numeric": "cpp",
-    "__mutex_base": "cpp"
+    "__mutex_base": "cpp",
+    "unordered_set": "cpp"
   }
 }

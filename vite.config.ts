@@ -6,6 +6,8 @@ import topLevelAwait from "vite-plugin-top-level-await";
 import commonjs from 'vite-plugin-commonjs'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
 import nodeResolve from "@rollup/plugin-node-resolve";
+import tsconfigPaths from 'vite-tsconfig-paths'
+
 
 
 export default defineConfig({
@@ -30,6 +32,7 @@ export default defineConfig({
       ]
     }), 
     nodeResolve({ browser: true }),
+    tsconfigPaths(),
   ],
   optimizeDeps: {
     include: [],
