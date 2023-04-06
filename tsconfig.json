@@ -16,6 +16,7 @@
     "jsx": "preserve",
     "types": [ 
       "vitest/importMeta",
+      "vitest/globals"
     ],
     "incremental": false,
     "paths": {
@@ -24,4 +25,5 @@
     }
   },
   "include": ["lib/**/*.ts", "lib/**/*.d.ts", "src/**/*.ts", "src/**/*.d.ts", "test/**/*"],
+  "files": [".eslintrc.cjs"]
 }

@@ -98,15 +98,11 @@ namespace emscripten {
 
       if (!initialized_) {
         EM_ASM({
-          console.log('wrapper', 'try1');
           let type = UTF8ToString($0);
           let directory = UTF8ToString($1);
           let allocatedDir = _malloc(directory.length + 1);
           stringToUTF8(directory, allocatedDir, directory.length + 1);
           let jsAllocatedDir = UTF8ToString(allocatedDir);
-          console.log('allocated dir', jsAllocatedDir);
-          console.log('wrapper', 'try2', type, directory, allocatedDir, jsAllocatedDir);
-          console.log('wrapper',window.indexedDB);
 
           if (type == "IDBFS") {
             FS.mkdir(jsAllocatedDir);

@@ -8,12 +8,17 @@ import { viteStaticCopy } from 'vite-plugin-static-copy'
 import nodeResolve from "@rollup/plugin-node-resolve";
 import tsconfigPaths from 'vite-tsconfig-paths'
 import dts from 'vite-plugin-dts'
+import checker from 'vite-plugin-checker'
+import eslint from 'vite-plugin-eslint'
+import vitest from 'eslint-plugin-vitest'
 
 
 
 
 export default defineConfig({
   plugins: [
+    checker({typescript:true}),
+    eslint(),
     wasm(),
     topLevelAwait(),
     viteStaticCopy({
