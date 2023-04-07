@@ -72,3 +72,28 @@ export const getIdbFileList = async (request: IDBOpenDBRequest): Promise<string[
 export const sleep = (ms: number) => {
   return new Promise((resolve) => setTimeout(resolve, ms));
 };
+
+export interface ItemMetadata {
+  color: string;
+  size: number;
+  weight: number;
+}
+
+export function generateMetadata(numItems: number): Record<string, ItemMetadata> {
+  const metadata: Record<string, ItemMetadata> = {};
+
+  for (let i = 1; i <= numItems; i++) {
+    metadata[i] = {
+      color: getRandomColor(),
+      size: Math.floor(Math.random() * 10) + 1,
+      weight: Math.floor(Math.random() * 100) + 1,
+    };
+  }
+
+  return metadata;
+}
+
+export function getRandomColor(): string {
+  const colors = ['red', 'green', 'blue', 'yellow', 'purple'];
+  return colors[Math.floor(Math.random() * colors.length)];
+}

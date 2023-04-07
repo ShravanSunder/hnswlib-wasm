@@ -1,5 +1,5 @@
 import { addItemsWithPtrsHelper, defaultParams, HierarchicalNSW, hnswParamsForAda } from '~dist/hnswlib';
-import { createVectorData, testErrors } from '~test/testHelpers';
+import { createVectorData, generateMetadata, ItemMetadata, testErrors } from '~test/testHelpers';
 import 'fake-indexeddb/auto';
 import { indexedDB } from 'fake-indexeddb';
 import { expect } from 'vitest';
@@ -517,7 +517,7 @@ describe('hnswlib.HierarchicalNSW', () => {
       beforeAll(() => {
         index = new testHnswlibModule.HierarchicalNSW('l2', 3);
       });
-      const filter = (label: number) => label % 2 == 0;
+      const filter = (label: number) => label % 2 === 0;
 
       beforeAll(() => {
         index.initIndex(4, ...defaultParams.initIndex);
@@ -569,6 +569,7 @@ describe('hnswlib.HierarchicalNSW', () => {
 
   describe('when a large block of data and dimensions is loaded', () => {
     const baseIndexSize = 1000;
+    const filename = 'testindex.dat';
     const testVectorData = createVectorData(baseIndexSize - 1, hnswParamsForAda.dimensions);
     let index: HierarchicalNSW;
     beforeEach(async () => {
@@ -581,15 +582,33 @@ describe('hnswlib.HierarchicalNSW', () => {
       const label = testVectorData.labels[1];
       const point = testVectorData.vectors[1];
       expect(index.getPoint(label)).toMatchObject(point);
-      //index.writeIndex(filename);
+      expect(() => index.writeIndex(filename)).not.toThrow();
     });
   });
 
-  describe('searchKnn with 1000 points', async () => {
+  describe('index with 1000 points', async () => {
     let index: HierarchicalNSW;
-
     const baseIndexSize = 1000;
     const testVectorData = createVectorData(baseIndexSize, hnswParamsForAda.dimensions);
+    const metaData = generateMetadata(baseIndexSize);
+
+    function findIdsWithProperty<keys extends string>(metadata: Record<keys, ItemMetadata>, color: string): string[] {
+      const ids: string[] = [];
+      for (const id in metadata) {
+        if (metadata[id] != null && metadata[id].color === color) {
+          ids.push(id);
+        }
+      }
+
+      return ids;
+    }
+
+    beforeAll(async () => {
+      metaData[10].color = 'red';
+      for (let i = 1; i <= 100; i++) {
+        metaData[i.toString()].color = 'red';
+      }
+    });
 
     const setup = async (m: number, efConstruction: number, efSearch: number) => {
       index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions);
@@ -598,25 +617,47 @@ describe('hnswlib.HierarchicalNSW', () => {
       index.setEfSearch(efSearch);
     };
 
-    it(`with default parameters`, async () => {
+    it(`search with default parameters`, async () => {
       await setup(48, 24, 16);
       const data = index.searchKnn(testVectorData.vectors[10], 10, undefined);
       expect(data.neighbors).include(10);
       expect(data.distances).toHaveLength(10);
       expect(data.neighbors).toHaveLength(10);
     });
+
+    it(`search with a filter`, async () => {
+      await setup(48, 24, 16);
+      const data = index.searchKnn(testVectorData.vectors[10], 10, (label: number) => {
+        return label === 10;
+      });
+      expect(data.neighbors).include(10);
+      expect(data.distances).toHaveLength(1);
+      expect(data.neighbors).toHaveLength(1);
+    });
+
+    it(`search with a filter callback`, async () => {
+      await setup(48, 24, 16);
+
+      const data = index.searchKnn(testVectorData.vectors[10], 100, (label: number) => {
+        const ids = findIdsWithProperty(metaData, 'red');
+        return ids.includes(label.toString());
+      });
+      expect(data.neighbors).include(10);
+      const result = data.neighbors.map((id) => {
+        return metaData[id.toString()].color;
+      });
+      expect(result.every((r) => r === 'red')).toBe(true);
+    });
   });
 
-  describe('searchKnn with 1000 ponts and addItemsWithPtrsHelper', async () => {
+  describe('searchKnn with 1000 points and addItemsWithPtrsHelper', async () => {
     let index: HierarchicalNSW;
-
     const baseIndexSize = 1000;
     const testVectorData = createVectorData(baseIndexSize, hnswParamsForAda.dimensions);
 
     const setup = async (m: number, efConstruction: number, efSearch: number) => {
       index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions);
       index.initIndex(baseIndexSize, m, efConstruction, 200, true);
-      console.log('testVectorData', testVectorData.labels.length, testVectorData.vectors.length);
       addItemsWithPtrsHelper(
         testHnswlibModule,
         index,
