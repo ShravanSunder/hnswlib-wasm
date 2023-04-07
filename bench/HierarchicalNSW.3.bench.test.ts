@@ -18,7 +18,6 @@ async function setupBefore() {
   const testVectorData = createVectorData(baseIndexSize, hnswParamsForAda.dimensions);
   index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions);
   index.initIndex(baseIndexSize, hnswParamsForAda.m, hnswParamsForAda.efConstruction, 200, true);
-  console.log(testHnswlibModule);
 
   await sleep(20);
 
