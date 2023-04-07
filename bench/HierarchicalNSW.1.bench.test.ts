@@ -9,7 +9,7 @@ describe('benchmark initIndex with defaults and 1536 dimensions', () => {
     // }
   };
   const baseIndexSize = 1000;
-  bench(
+  bench.skip(
     `${baseIndexSize} points`,
     async () => {
       const newIndexSize = baseIndexSize;
@@ -32,9 +32,9 @@ describe('benchmark initIndex with defaults and 1536 dimensions', () => {
   );
 
   bench(
-    `${baseIndexSize * 100} points`,
+    `${baseIndexSize * 50} points`,
     async () => {
-      const newIndexSize = baseIndexSize * 100;
+      const newIndexSize = baseIndexSize * 50;
       index.initIndex(newIndexSize, ...defaultParams.initIndex);
     },
     {
@@ -50,7 +50,7 @@ describe('benchmark initIndex with hnswParamsForAda', () => {
     // }
   };
   const baseIndexSize = 1000;
-  bench(
+  bench.skip(
     `${baseIndexSize} points`,
     async () => {
       index.initIndex(baseIndexSize, hnswParamsForAda.m, hnswParamsForAda.efConstruction, 200, true);
@@ -71,68 +71,14 @@ describe('benchmark initIndex with hnswParamsForAda', () => {
     }
   );
 
-  bench.skip(
-    `${baseIndexSize * 100} points`,
+  bench(
+    `${baseIndexSize * 50} points`,
     async () => {
-      const newIndexSize = baseIndexSize * 100;
+      const newIndexSize = baseIndexSize * 50;
       index.initIndex(newIndexSize, hnswParamsForAda.m, hnswParamsForAda.efConstruction, 200, true);
     },
     {
       setup,
-    }
-  );
-});
-
-describe('benchmark initIndex and addPoints', () => {
-  let hnswlib: HnswlibModule;
-  let index: HierarchicalNSW;
-  const setup = async () => {
-    // if (!hnswlib) {
-    hnswlib = await loadHnswlib();
-    index = new hnswlib.HierarchicalNSW('l2', hnswParamsForAda.dimensions);
-    // }
-  };
-  const baseIndexSize = 10;
-  bench(
-    `${baseIndexSize} points`,
-    async () => {
-      const newIndexSize = baseIndexSize;
-      index.initIndex(newIndexSize, ...defaultParams.initIndex);
-      const testVectorData = createVectorData(newIndexSize, hnswParamsForAda.dimensions);
-
-      index.addItems(testVectorData.vectors, testVectorData.labels, ...defaultParams.addPoint);
-    },
-    {
-      setup,
-      iterations: 5,
-    }
-  );
-
-  bench(
-    `${baseIndexSize * 10} points`,
-    async () => {
-      const newIndexSize = baseIndexSize * 10;
-      index.initIndex(newIndexSize, ...defaultParams.initIndex);
-      const testVectorData = createVectorData(newIndexSize, hnswParamsForAda.dimensions);
-      index.addItems(testVectorData.vectors, testVectorData.labels, ...defaultParams.addPoint);
-    },
-    {
-      setup,
-      iterations: 5,
-    }
-  );
-
-  bench(
-    `${baseIndexSize * 100} points`,
-    async () => {
-      const newIndexSize = baseIndexSize * 100;
-      index.initIndex(newIndexSize, ...defaultParams.initIndex);
-      const testVectorData = createVectorData(newIndexSize, hnswParamsForAda.dimensions);
-      index.addItems(testVectorData.vectors, testVectorData.labels, ...defaultParams.addPoint);
-    },
-    {
-      setup,
-      iterations: 5,
     }
   );
 });

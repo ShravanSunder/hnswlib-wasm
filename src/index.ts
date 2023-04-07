@@ -35,7 +35,9 @@ export interface HnswlibModule extends Omit<EmscriptenModule, '_malloc' | '_free
 
 /**
  * Adds items and their corresponding labels to the HierarchicalNSW index using memory pointers.
- * This function handles the memory allocation for the Emscripten Module, and properly frees the memory after use.
+ * This function handles the memory allocation for the Emscripten Module, and properly frees the memory after use.  its a wrapper around {@link HierarchicalNSW#addItemsWithPtrs}
+ *
+ * ⛔️ This function is only 1.02x faster than vectors for 10k points version which are easier to use.  The sole advantage is memory savings
  *
  * @async
  * @param {HnswlibModule} Module - The Emscripten HNSWLIB Module object.
