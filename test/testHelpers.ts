@@ -46,6 +46,7 @@ export const getIdbFileList = async (request: IDBOpenDBRequest): Promise<string[
   return new Promise((resolve, reject) => {
     request.onsuccess = () => {
       const db: IDBDatabase = request.result;
+      console.log('stores', db.objectStoreNames);
       const transaction = db.transaction(IdbfsFileStore, "readonly");
       const fileDataStore = transaction.objectStore(IdbfsFileStore);
 

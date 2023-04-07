@@ -316,13 +316,19 @@ export class EmscriptenFileSystemManager {
   constructor();
   static initializeFileSystem(fsType:'NODEFS' | 'IDBFS'): void;
   static isInitialized(): boolean;
+  /**
+   * Syncs the Emscripten file system with the persistent storage IDBFS
+   * @param read read (bool) – true to initialize Emscripten’s file system data with the data from the file system’s persistent source, and false to save Emscripten`s file system data to the file system’s persistent source. 
+   * @param callback 
+   */
+  static syncFs(read: boolean, callback: ()=>void): Promise<boolean>;
 }
 
 
 export interface HnswlibModule {
   normalizePoint(vec: number[]): number[];
   /**
-   * Syncs the 
+   * Syncs the Emscripten file system with the persistent storage IDBFS.
    * @param read read (bool) – true to initialize Emscripten’s file system data with the data from the file system’s persistent source, and false to save Emscripten`s file system data to the file system’s persistent source.
    * @returns 
    */

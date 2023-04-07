@@ -74,6 +74,10 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
     environment: 'happy-dom',
+    benchmark: {
+      include: ['**/*.bench.ts'],
+    },
+    // exclude: ['test/**/*.bench.ts'],
     // browser: {
     //   enabled: true,
     //   name: 'chromium',

@@ -25,5 +25,5 @@
     }
   },
   "include": ["lib/**/*.ts", "lib/**/*.d.ts", "src/**/*.ts", "src/**/*.d.ts", "test/**/*"],
-  "files": [".eslintrc.cjs"]
+  "files": [".eslintrc.cjs", ]
 }

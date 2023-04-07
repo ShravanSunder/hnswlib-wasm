@@ -27,7 +27,7 @@
     "publish:pre": "npm version prerelease --git-tag-version false && npm publish --tag next"
   },
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "^15.0.1",
+    "@rollup/plugin-node-resolve": "^15.0.2",
     "@types/emscripten": "^1.39.6",
     "@types/jest": "^29.5.0",
     "@types/node": "^18.15.11",

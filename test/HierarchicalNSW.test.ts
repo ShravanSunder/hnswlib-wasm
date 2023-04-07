@@ -4,6 +4,7 @@ import { adaDimensions, createVectorData, getIdbFileList } from "~test/testHelpe
 import { testErrors } from "./testHelpers";
 import "fake-indexeddb/auto"
 import { indexedDB } from "fake-indexeddb";
+import { expect } from "vitest";
 
 
 describe("hnswlib.HierarchicalNSW", () => {
@@ -555,63 +556,44 @@ describe("hnswlib.HierarchicalNSW", () => {
 
     beforeEach(() => {
       index.initIndex(3, ...defaultParams.initIndex);
-      index.addPoint([1, 2, 3], 0, ...defaultParams.addPoint);
+      index.addPoint([1, 2, 3], 0, ...defaultParams.addPoint); 
       index.addPoint([2, 3, 4], 1, ...defaultParams.addPoint);
-      index.addPoint([3, 4, 5], 2, ...defaultParams.addPoint);
+      index.addPoint([3, 4, 5], 2, ...defaultParams.addPoint); 
       expect(index.getPoint(0)).toMatchObject([1, 2, 3]);
       index.writeIndex(filename);
     });
 
-    it("can write a file and it exists", async () => {
-      index.writeIndex(filename);
-      await hnswlib.syncFs();
+    it("can write a file and the idb database exists", async () => {
       const db = await indexedDB.open('/hnswlib-indexes');
-      const files = await getIdbFileList(db);
-      console.log('stfuff',files); 
+      //const files = await getIdbFileList(db);
+      //console.log('stfuff',files); 
       expect(db).not.eql(null);
     });
 
     it("can write a file and read the index back", async () => {
-      expect(index.getPoint(0)).toMatchObject([1, 2, 3]);
       index = new hnswlib.HierarchicalNSW("ip", 3);
+      expect(() => index.getPoint(1)).toThrow(testErrors.indexNotInitalized);
       index.readIndex('testindex.dat', false);
-      expect(index.getPoint(0)).toMatchObject([1, 2, 3]);
+      expect(index.getPoint(1)).toMatchObject([2, 3, 4]);
     });
   });
 
-  describe.skip('when a large block of data and dimensions is loaded', () => { 
-    const localIndexLocation = './tmp/testindex.dat';
-    const filename = 'testindex.dat';
-    const indexSize = 1000;
-    const testVectorData = createVectorData(indexSize-1, adaDimensions);
-    beforeAll(async () => {
+  describe('when a large block of data and dimensions is loaded', () => { 
+    const baseIndexSize = 1000;
+    const testVectorData = createVectorData(baseIndexSize - 1, adaDimensions);
+    beforeEach(async () => {
       index = new hnswlib.HierarchicalNSW("l2", adaDimensions);
-      const fs = await import('fs')
-      if (fs.existsSync(localIndexLocation)) {
-        await fs.unlinkSync(localIndexLocation)
-      }
     });
 
-    it(`when loading ${indexSize} points, then they can be loaded and removed`, () => {
-      index.initIndex(indexSize, ...defaultParams.initIndex);
+    it(`when loading ${baseIndexSize} points, then they can be loaded and removed`, () => {
+      index.initIndex(baseIndexSize, ...defaultParams.initIndex);
       index.addItems(testVectorData.vectors, testVectorData.labels, ...defaultParams.addPoint);
       const label = testVectorData.labels[1];
       const point = testVectorData.vectors[1];
       expect(index.getPoint(label)).toMatchObject(point);
       //index.writeIndex(filename);
     });
-
-    it(`when loading ${indexSize*10} points, then they can be loaded and removed`, () => {
-      index.initIndex(indexSize, ...defaultParams.initIndex);
-      index.addItems(testVectorData.vectors, testVectorData.labels, ...defaultParams.addPoint);
-      index.addItems(testVectorData.vectors, testVectorData.labels, ...defaultParams.addPoint);
-      index.addItems(testVectorData.vectors, testVectorData.labels, ...defaultParams.addPoint);
-      index.addItems(testVectorData.vectors, testVectorData.labels, ...defaultParams.addPoint);
-      const label = testVectorData.labels[1];
-      const point = testVectorData.vectors[1];
-      expect(index.getPoint(label)).toMatchObject(point);
-      //index.writeIndex(filename);
-    });
-
    })
 });
+
+

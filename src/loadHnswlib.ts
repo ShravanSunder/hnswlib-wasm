@@ -44,13 +44,12 @@ export const loadHnswlib = async (
         return lib;
     }
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    const temp = (await import("./hnswlib.mjs"));
-    const factory = temp.default;
-    
-
     if (!library) {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      const temp = (await import("./hnswlib.mjs"));
+      const factory = temp.default;
+
       library = await factory();
       console.log("Library initialized");
       await initializeFileSystemAsync(inputFsType);

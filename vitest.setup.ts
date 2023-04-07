@@ -4,5 +4,5 @@ import "fake-indexeddb/auto";
 
 
 export async function teardown() {
-  process.stdout.write("");
+  //process.stdout.write("");
 }
