@@ -1,8 +1,8 @@
 import './hnswlib.mjs';
-import { type Factory } from './hnswlib-wasm';
+import { type HnswModuleFactory } from '.';
 import { HnswlibModule } from './';
 
-let library: Awaited<ReturnType<Factory>>;
+let library: Awaited<ReturnType<HnswModuleFactory>>;
 type InputFsType = 'NODEFS' | 'IDBFS' | undefined;
 
 const initializeFileSystemAsync = async (inputFsType?: InputFsType): Promise<void> => {

@@ -1,4 +1,4 @@
-import { IdbfsFileStore } from '../dist/hnswlib';
+import { defaultParams, hnswParamsForAda, IdbfsFileStore } from '../dist/hnswlib';
 
 export const testErrors = {
   indexSize: /The maximum number of elements has been reached in index/,
@@ -18,12 +18,11 @@ export const testErrors = {
 
 export type testErrorTypes = keyof typeof testErrors;
 
-export const adaDimensions = 1536 as const;
-export const createVectorData = (numOfVec = 100, dimensions: number = adaDimensions) => {
+export const createVectorData = (numOfVec = 100, dimensions: number = hnswParamsForAda.dimensions, start = 0) => {
   const vectors: Float32Array[] = [];
   const labels: number[] = [];
 
-  for (let i = 0; i < numOfVec; i++) {
+  for (let i = start; i < start + numOfVec; i++) {
     const vector = Array.from({ length: dimensions }, () => Math.random());
     vectors.push(new Float32Array(vector));
     labels.push(i);
@@ -68,4 +67,8 @@ export const getIdbFileList = async (request: IDBOpenDBRequest): Promise<string[
       reject(new Error('Error while opening IndexedDB.'));
     };
   });
+};
+
+export const sleep = (ms: number) => {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 };
