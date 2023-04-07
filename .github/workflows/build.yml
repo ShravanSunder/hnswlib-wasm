@@ -7,23 +7,37 @@ on:
       - develop
   pull_request:
     types: [opened, reopened, synchronize]
+  workflow_dispatch: # This will enable the on-demand action
+
 
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: ['14', '16', '18']
+        node: ['18']
     steps:
     - uses: actions/checkout@v3
     - name: Setup node ${{ matrix.node }}
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node }}
+    - uses: mymindstorm/setup-emsdk@v11
+    - name: 'yarn cache'
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.yarn
+          ~/node_modules
+        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
     - name: Install
       run: yarn install
-    - name: Build and test
-      run: yarn node-gyp rebuild && yarn jest
+    - name: Test
+      run: yarn test
+    - name: Bench
+      run: yarn test bench
   build-win:
     runs-on: windows-latest
     steps:
@@ -32,10 +46,24 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 18.x
+    - uses: mymindstorm/setup-emsdk@v11
+    - name: 'cache'
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.yarn
+          ~/node_modules
+        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}    
     - name: Install
       run: yarn install
-    - name: Build and test
-      run: yarn node-gyp rebuild && yarn jest
+    - name: Build
+      run: yarn build
+    - name: Test
+      run: yarn test
+    - name: Bench
+      run: yarn test bench
   build-mac:
     runs-on: macos-latest
     steps:
@@ -44,7 +72,19 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 18.x
+    - uses: mymindstorm/setup-emsdk@v11
+    - name: 'cache'
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.yarn
+          ~/node_modules
+        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}    
     - name: Install
       run: yarn install
-    - name: Build and test
-      run: yarn node-gyp rebuild && yarn jest
+    - name: Test
+      run: yarn test
+    - name: Bench
+      run: yarn test bench
