@@ -22,8 +22,17 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node }}
+    - name: 'emcc cache'
+      id: cache-system-libraries
+      uses: actions/cache@v2
+      with:
+        path: ${{env.EM_CACHE_FOLDER}}
+        key: ${{env.EM_VERSION}}-${{ runner.os }}
     - uses: mymindstorm/setup-emsdk@v11
-    - name: 'cache'
+      with:
+        version: ${{env.EM_VERSION}}
+        actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
+    - name: 'yarn cache'
       uses: actions/cache@v2
       with:
         path: |
@@ -46,8 +55,17 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 18.x
+    - name: 'emcc cache'
+      id: cache-system-libraries
+      uses: actions/cache@v2
+      with:
+        path: ${{env.EM_CACHE_FOLDER}}
+        key: ${{env.EM_VERSION}}-${{ runner.os }}
     - uses: mymindstorm/setup-emsdk@v11
-    - name: 'cache'
+      with:
+        version: ${{env.EM_VERSION}}
+        actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
+    - name: 'yarn cache'
       uses: actions/cache@v2
       with:
         path: |
@@ -55,7 +73,7 @@ jobs:
           ~/node_modules
         key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
         restore-keys: |
-          ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}    
+          ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
     - name: Install
       run: yarn install
     - name: Build
@@ -72,8 +90,17 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 18.x
+    - name: 'emcc cache'
+      id: cache-system-libraries
+      uses: actions/cache@v2
+      with:
+        path: ${{env.EM_CACHE_FOLDER}}
+        key: ${{env.EM_VERSION}}-${{ runner.os }}
     - uses: mymindstorm/setup-emsdk@v11
-    - name: 'cache'
+      with:
+        version: ${{env.EM_VERSION}}
+        actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
+    - name: 'yarn cache'
       uses: actions/cache@v2
       with:
         path: |
@@ -81,7 +108,7 @@ jobs:
           ~/node_modules
         key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
         restore-keys: |
-          ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}    
+          ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
     - name: Install
       run: yarn install
     - name: Test
