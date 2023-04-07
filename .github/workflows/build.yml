@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: ['14', '16', '18']
+        node: ['18']
     steps:
     - uses: actions/checkout@v3
     - name: Setup node ${{ matrix.node }}
@@ -22,8 +22,10 @@ jobs:
         node-version: ${{ matrix.node }}
     - name: Install
       run: yarn install
-    - name: Build and test
-      run: yarn node-gyp rebuild && yarn jest
+    - name: Test
+      run: yarn test
+    - name: Bench
+      run: yarn test bench
   build-win:
     runs-on: windows-latest
     steps:
@@ -34,8 +36,12 @@ jobs:
         node-version: 18.x
     - name: Install
       run: yarn install
-    - name: Build and test
-      run: yarn node-gyp rebuild && yarn jest
+    - name: Build
+      run: yarn build
+    - name: Test
+      run: yarn test
+    - name: Bench
+      run: yarn test bench
   build-mac:
     runs-on: macos-latest
     steps:
@@ -46,5 +52,7 @@ jobs:
         node-version: 18.x
     - name: Install
       run: yarn install
-    - name: Build and test
-      run: yarn node-gyp rebuild && yarn jest
+    - name: Test
+      run: yarn test
+    - name: Bench
+      run: yarn test bench
