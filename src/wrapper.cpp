@@ -53,7 +53,7 @@ namespace emscripten {
 
     /// @brief This function normalizes the point in place, but cheats and uses the same input parameter vector.  It is set as const due to bindings
     /// @param vec 
-    void normalizePoint(const std::vector<float>& vec) {
+    void normalizePoints(const std::vector<float>& vec) {
       try {
         std::vector<float>& result = const_cast<std::vector<float>&>(vec);
         const size_t dim = result.size();
@@ -69,8 +69,7 @@ namespace emscripten {
 
   }  // namespace internal
 
-
-  std::vector<float> normalizePointPure(const std::vector<float>& vec) {
+  std::vector<float> normalizePointsPure(const std::vector<float>& vec) {
     try {
       std::vector<float> result(vec);
       const size_t dim = result.size();
@@ -85,83 +84,7 @@ namespace emscripten {
     }
   }
 
-
   /*****************/
-  class EmscriptenFileSystemManager {
-  public:
-    static std::string virtualDirectory;
-
-    static void initializeFileSystem(const std::string& fsType) {
-      std::lock_guard<std::mutex> lock(init_mutex_);
-      virtualDirectory = "/hnswlib-index";
-      const char* virtualDirCStr = virtualDirectory.c_str();
-      const char* fsTypeCStr = fsType.c_str();
-
-      if (!initialized_) {
-        EM_ASM({
-          let type = UTF8ToString($0);
-          let directory = UTF8ToString($1);
-          let allocatedDir = _malloc(directory.length + 1);
-          stringToUTF8(directory, allocatedDir, directory.length + 1);
-          let jsAllocatedDir = UTF8ToString(allocatedDir);
-          console.log('allocated dir', jsAllocatedDir);
-
-          if (type == "IDBFS") {
-            FS.mkdir(jsAllocatedDir);
-            FS.mount(IDBFS, {}, jsAllocatedDir);
-            console.log('EmscriptenFileSystemManager: Mounting IDBFS filesystem...');
-          }
-          else if (type == "NODEFS") {
-            if (!FS.analyzePath(jsAllocatedDir).exists) {
-              FS.mkdir(jsAllocatedDir);
-            }
-             FS.mount(NODEFS, { root: './tmp' }, jsAllocatedDir);
-            console.log('EmscriptenFileSystemManager: Mounting NODEFS   filesystem...');
-          }
-          else if (type == "WORKERFS") {
-            FS.mkdir(jsAllocatedDir);
-            FS.mount(WORKERFS, { hnswlibBlobs }, jsAllocatedDir);
-          }
-          else {
-             throw new Error('Unsupported filesystem type, only NODEFS, IDBFS: ' + type);
-          }
-
-          // var fs = require('fs');
-          // fs.writeFileSync('./tmp/foobar.txt', 'yeehaw',{encoding:'utf8',flag : 'w'});
-
-          FS.syncfs(true, function(err) {
-            // Error
-            if (err) {
-              console.error('EmscriptenFileSystemManager: Error syncing FS:', err);
-              throw new Error('EmscriptenFileSystemManager: Error syncing FS: ' + err);
-            }
-            else {
-              console.log('EmscriptenFileSystemManager: FS synced successfully');
-            }
-          });
-          _free(allocatedDir);
-          }, fsTypeCStr, virtualDirCStr);
-
-        initialized_ = true;
-
-        // printf("Syncing FS 1...\n");
-        // FILE* fp = fopen("/hnswlib/abcdefg.txt", "w");
-        // if (fp) {
-        //   fprintf(fp, "test\n");
-        //   fclose(fp);
-        // }
-      }
-    }
-
-    static bool isInitialized() {
-      std::lock_guard<std::mutex> lock(init_mutex_);
-      return initialized_;
-    }
-
-  private:
-    static std::mutex init_mutex_;
-    static bool initialized_;
-  };
 
   extern "C" {
     typedef void (*syncfs_callback)(int);
@@ -180,7 +103,7 @@ namespace emscripten {
         FS.syncfs(read, function(err) {
           if (err) {
             console.error('Error syncing FS:', err);
-            Runtime.dynCall('vi', callback,[-1]);
+            dynCall('vi', callback,[-1]);
           }
         else {
           console.log('FS synced successfully');
@@ -196,6 +119,95 @@ namespace emscripten {
 
         });
     }
+
+    /*****************/
+    class EmscriptenFileSystemManager {
+    public:
+      static std::string virtualDirectory;
+
+      static void initializeFileSystem(const std::string& fsType) {
+        std::lock_guard<std::mutex> lock(init_mutex_);
+        virtualDirectory = "/hnswlib-index";
+        const char* virtualDirCStr = virtualDirectory.c_str();
+        const char* fsTypeCStr = fsType.c_str();
+
+        if (!initialized_) {
+          EM_ASM({
+            let type = UTF8ToString($0);
+            let directory = UTF8ToString($1);
+            let allocatedDir = _malloc(directory.length + 1);
+            stringToUTF8(directory, allocatedDir, directory.length + 1);
+            let jsAllocatedDir = UTF8ToString(allocatedDir);
+
+            if (type == "IDBFS") {
+              FS.mkdir(jsAllocatedDir);
+              FS.mount(IDBFS, {}, jsAllocatedDir);
+              console.log('EmscriptenFileSystemManager: Mounting IDBFS filesystem...');
+            }
+            // // FUTURE SUPPORT FOR NODEFS
+            // if (type == "NODEFS") {
+            //   console.log('wrapper', 'NODEFS');
+            //   if (!FS.analyzePath(jsAllocatedDir).exists) {
+            //     console.log('wrapper', 'NODEFS2');
+            //     FS.mkdir(jsAllocatedDir);
+            //   }
+            //   console.log('wrapper', 'NODEFS3');
+            //   FS.mount(NODEFS, { root: './tmp' }, jsAllocatedDir);
+            //   console.log('EmscriptenFileSystemManager: Mounting NODEFS   filesystem...');
+            // }
+            // else if (type == "WORKERFS") {
+            //   FS.mkdir(jsAllocatedDir);
+            //   FS.mount(WORKERFS, { hnswlibBlobs }, jsAllocatedDir);
+            // }
+            else {
+               throw new Error('Unsupported filesystem type, only NODEFS, IDBFS: ' + type);
+            }
+
+            // // PRINT STATEMENT FOR DEBUGGING
+            // var fs = require('fs');
+            // fs.writeFileSync('./tmp/foobar.txt', 'yeehaw',{encoding:'utf8',flag : 'w'});
+
+            FS.syncfs(true, function(err) {
+              // Error
+              if (err) {
+                console.error('EmscriptenFileSystemManager: Error syncing FS:', err);
+                throw new Error('EmscriptenFileSystemManager: Error syncing FS: ' + err);
+              }
+              // else {
+              //   console.log('EmscriptenFileSystemManager: FS synced successfully');
+              // }
+            });
+            _free(allocatedDir);
+            }, fsTypeCStr, virtualDirCStr);
+
+          initialized_ = true;
+
+          // // PRINT STATEMENT FOR DBUGGING
+          // printf("Syncing FS 1...\n");
+          // FILE* fp = fopen("/hnswlib/abcdefg.txt", "w");
+          // if (fp) {
+          //   fprintf(fp, "test\n");
+          //   fclose(fp);
+          // }
+        }
+      }
+
+      static void syncFs(bool read, emscripten::val js_callback) {
+        hnswlib_syncfs(read);
+        js_callback.call<void>("call", emscripten::val::undefined());
+      }
+
+      static bool isInitialized() {
+        std::lock_guard<std::mutex> lock(init_mutex_);
+        return initialized_;
+      }
+
+    private:
+      static std::mutex init_mutex_;
+      static bool initialized_;
+    };
+
+
   }
 
 
@@ -361,9 +373,9 @@ namespace emscripten {
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
 
-      if (index_) {
-        index_->saveIndex(filename);
-      }
+      index_->saveIndex(filename);
+      hnswlib_syncfs(false);
+
     }
 
     void addPoint(const std::vector<float>& vec, uint32_t idx) {
@@ -376,7 +388,7 @@ namespace emscripten {
 
       std::vector<float>& mutableVec = const_cast<std::vector<float>&>(vec);
       if (normalize_) {
-        internal::normalizePoint(mutableVec);
+        internal::normalizePoints(mutableVec);
       }
 
       if (index_->cur_element_count == index_->maxelements_) {
@@ -426,7 +438,7 @@ namespace emscripten {
       std::vector<float>& mutableVec = const_cast<std::vector<float>&>(vec);
 
       if (normalize_) {
-        internal::normalizePoint(mutableVec);
+        internal::normalizePoints(mutableVec);
       }
 
       std::priority_queue<std::pair<float, size_t>> knn =
@@ -549,6 +561,7 @@ namespace emscripten {
       }
       const std::string path = EmscriptenFileSystemManager::virtualDirectory + "/" + filename;
       index_->saveIndex(path);
+      hnswlib_syncfs(false);
     }
 
     void resizeIndex(uint32_t new_max_elements) {
@@ -574,7 +587,6 @@ namespace emscripten {
       }
     }
 
-
     void addPoint(const std::vector<float>& vec, uint32_t idx, bool replace_deleted = false) {
       if (index_ == nullptr) {
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
@@ -587,7 +599,7 @@ namespace emscripten {
       std::vector<float>& mutableVec = const_cast<std::vector<float>&>(vec);
 
       if (normalize_) {
-        internal::normalizePoint(mutableVec);
+        internal::normalizePoints(mutableVec);
       }
 
       if (index_->cur_element_count == index_->max_elements_) {
@@ -601,6 +613,43 @@ namespace emscripten {
         throw std::runtime_error("Hnswlib Error: " + std::string(e.what()));
       }
     }
+    void addItems(const std::vector<std::vector<float>>& vec, const std::vector<uint32_t>& idVec, bool replace_deleted = false) {
+      if (index_ == nullptr) {
+        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
+      }
+
+      if (vec.size() != idVec.size()) {
+        throw std::runtime_error("The number of vectors and ids must be the same.");
+      }
+
+      if (vec.size() <= 0) {
+        throw std::runtime_error("The number of vectors and ids must be greater than 0.");
+      }
+
+      if (index_->cur_element_count + idVec.size() > index_->max_elements_) {
+        throw std::runtime_error("The maximum number of elements has been reached in index, please increased the index max_size.  max_size: " + std::to_string(index_->max_elements_));
+      }
+
+      try {
+        for (size_t i = 0; i < vec.size(); ++i) {
+          if (vec[i].size() != dim_) {
+            throw std::invalid_argument("Invalid vector size at index " + std::to_string(i) + ". Must be equal to the dimension of the space. The dimension of the space is " + std::to_string(this->dim_) + ".");
+          }
+
+          std::vector<float>& mutableVec = const_cast<std::vector<float>&>(vec[i]);
+
+          if (normalize_) {
+            internal::normalizePoints(mutableVec);
+          }
+
+          index_->addPoint(reinterpret_cast<void*>(mutableVec.data()), static_cast<hnswlib::labeltype>(idVec[i]), replace_deleted);
+        }
+      }
+      catch (const std::exception& e) {
+        throw std::runtime_error("Could not addItems " + std::string(e.what()));
+      }
+    }
+
 
     int getMaxElements() {
       if (index_ == nullptr) {
@@ -626,6 +675,23 @@ namespace emscripten {
 
       index_->markDelete(static_cast<hnswlib::labeltype>(idx));
     }
+
+
+    void markDeleteItems(const std::vector<uint32_t>& labelsVec) {
+      if (index_ == nullptr) {
+        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
+      }
+
+      try {
+        for (const hnswlib::labeltype& label : labelsVec) {
+          index_->markDelete(static_cast<hnswlib::labeltype>(label));
+        }
+      }
+      catch (const std::exception& e) {
+        throw std::runtime_error("Could not markDeleteItems " + std::string(e.what()));
+      }
+    }
+
 
     void unmarkDelete(uint32_t idx) {
       if (index_ == nullptr) {
@@ -661,7 +727,7 @@ namespace emscripten {
 
       std::vector<float>& mutableVec = const_cast<std::vector<float>&>(vec);
       if (normalize_) {
-        internal::normalizePoint(mutableVec);
+        internal::normalizePoints(mutableVec);
       }
 
       std::priority_queue<std::pair<float, size_t>> knn =
@@ -723,7 +789,7 @@ namespace emscripten {
   EMSCRIPTEN_BINDINGS(hnswlib) {
     using namespace emscripten;
 
-    function("normalizePoint", &normalizePointPure);
+    function("normalizePoint", &normalizePointsPure);
 
     emscripten::class_<L2Space>("L2Space")
       .constructor<uint32_t>()
@@ -762,9 +828,11 @@ namespace emscripten {
       .function("resizeIndex", &HierarchicalNSW::resizeIndex)
       .function("getPoint", &HierarchicalNSW::getPoint)
       .function("addPoint", &HierarchicalNSW::addPoint)
+      .function("addItems", &HierarchicalNSW::addItems)
       .function("getMaxElements", &HierarchicalNSW::getMaxElements)
       .function("getIdsList", &HierarchicalNSW::getIdsList)
       .function("markDelete", &HierarchicalNSW::markDelete)
+      .function("markDeleteItems", &HierarchicalNSW::markDeleteItems)
       .function("unmarkDelete", &HierarchicalNSW::unmarkDelete)
       .function("getCurrentCount", &HierarchicalNSW::getCurrentCount)
       .function("getNumDimensions", &HierarchicalNSW::getNumDimensions)
@@ -778,7 +846,8 @@ namespace emscripten {
     emscripten::class_<EmscriptenFileSystemManager>("EmscriptenFileSystemManager")
       .constructor<>()
       .class_function("initializeFileSystem", &EmscriptenFileSystemManager::initializeFileSystem, emscripten::allow_raw_pointer<const char*>())
-      .class_function("isInitialized", &EmscriptenFileSystemManager::isInitialized);
+      .class_function("isInitialized", &EmscriptenFileSystemManager::isInitialized)
+      .class_function("syncFs", &EmscriptenFileSystemManager::syncFs);
   }
 
 }  // namespace emscripten

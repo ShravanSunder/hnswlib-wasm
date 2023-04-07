@@ -16,7 +16,7 @@ CFLAGS += -s FORCE_FILESYSTEM
 CFLAGS += -s SINGLE_FILE
 
 CFLAGS += --bind
-# CFLAGS += -s ENVIRONMENT=web,node
+CFLAGS += -s ENVIRONMENT=web
 # CFLAGS += -s VERBOSE=1
 CFLAGS += -gsource-map
 CFLAGS += -lnodefs.js
@@ -54,7 +54,6 @@ all: $(OUTPUT) copy_and_comment
 $(OUTPUT): $(SOURCES)
 	mkdir -p lib
 	$(CC) $(CFLAGS) $(LDFLAGS) $(SOURCES) -o $(OUTPUT).mjs 
-	$(CC) $(CFLAGS) $(LDFLAGS) $(SOURCES) -o $(OUTPUT).js
 
 # Add a `clean` target to remove generated files from the 'lib' directory.
 clean:
