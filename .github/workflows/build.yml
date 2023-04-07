@@ -7,6 +7,8 @@ on:
       - develop
   pull_request:
     types: [opened, reopened, synchronize]
+  workflow_dispatch: # This will enable the on-demand action
+
 
 jobs:
   build:
