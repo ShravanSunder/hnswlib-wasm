@@ -67,7 +67,21 @@ namespace emscripten {
       }
     }
 
+    void normalizePointsPtrs(float* vec, size_t dim) {
+      float sum = 0;
+      for (size_t i = 0; i < dim; ++i) {
+        sum += vec[i] * vec[i];
+      }
+      float norm = sqrt(sum);
+      for (size_t i = 0; i < dim; ++i) {
+        vec[i] /= norm;
+      }
+    }
+
+
   }  // namespace internal
+
+  /*****************/
 
   std::vector<float> normalizePointsPure(const std::vector<float>& vec) {
     try {
@@ -613,6 +627,7 @@ namespace emscripten {
         throw std::runtime_error("Hnswlib Error: " + std::string(e.what()));
       }
     }
+
     void addItems(const std::vector<std::vector<float>>& vec, const std::vector<uint32_t>& idVec, bool replace_deleted = false) {
       if (index_ == nullptr) {
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
@@ -649,6 +664,46 @@ namespace emscripten {
         throw std::runtime_error("Could not addItems " + std::string(e.what()));
       }
     }
+
+    void addItemsWithPtr(emscripten::val vecData, uint32_t vecSize, emscripten::val idVecData, uint32_t idVecSize, bool replace_deleted = false) {
+      if (index_ == nullptr) {
+        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
+      }
+
+      if ((vecSize / dim_) != idVecSize) {
+        throw std::runtime_error("The number of vectors and ids must be the same.");
+      }
+
+      if (vecSize <= 0) {
+        throw std::runtime_error("The number of vectors and ids must be greater than 0.");
+      }
+
+      if (index_->cur_element_count + idVecSize > index_->max_elements_) {
+        throw std::runtime_error("The maximum number of elements has been reached in index, please increase the index max_size.  max_size: " + std::to_string(index_->max_elements_));
+      }
+
+      try {
+        for (size_t i = 0; i < idVecSize; ++i) {
+          float* vec = new float[dim_];
+
+          for (size_t j = 0; j < dim_; ++j) {
+            vec[j] = vecData[i * dim_ + j].as<float>();
+          }
+
+          if (normalize_) {
+            internal::normalizePointsPtrs(vec, dim_);
+          }
+
+          index_->addPoint(reinterpret_cast<void*>(vec), static_cast<hnswlib::labeltype>(idVecData[i].as<uint32_t>()), replace_deleted);
+
+          delete[] vec;
+        }
+      }
+      catch (const std::exception& e) {
+        throw std::runtime_error("Could not addItems " + std::string(e.what()));
+      }
+    }
+
 
 
     int getMaxElements() {
@@ -765,14 +820,14 @@ namespace emscripten {
       return dim_;
     }
 
-    uint32_t getEf() const {
+    uint32_t getEfSearch() const {
       if (index_ == nullptr) {
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
       return index_ == nullptr ? 0 : index_->ef_;
     }
 
-    void setEf(uint32_t ef) {
+    void setEfSearch(uint32_t ef) {
       if (index_ == nullptr) {
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
@@ -829,6 +884,8 @@ namespace emscripten {
       .function("getPoint", &HierarchicalNSW::getPoint)
       .function("addPoint", &HierarchicalNSW::addPoint)
       .function("addItems", &HierarchicalNSW::addItems)
+      //.function("addItemsWithPtr", static_cast<void(HierarchicalNSW::*)(float*, uint32_t, uint32_t*, uint32_t, bool)>(&HierarchicalNSW::addItemsWithPtr), emscripten::allow_raw_pointers())
+      .function("addItemsWithPtr", &HierarchicalNSW::addItemsWithPtr)
       .function("getMaxElements", &HierarchicalNSW::getMaxElements)
       .function("getIdsList", &HierarchicalNSW::getIdsList)
       .function("markDelete", &HierarchicalNSW::markDelete)
@@ -836,8 +893,8 @@ namespace emscripten {
       .function("unmarkDelete", &HierarchicalNSW::unmarkDelete)
       .function("getCurrentCount", &HierarchicalNSW::getCurrentCount)
       .function("getNumDimensions", &HierarchicalNSW::getNumDimensions)
-      .function("getEf", &HierarchicalNSW::getEf)
-      .function("setEf", &HierarchicalNSW::setEf)
+      .function("getEfSearch", &HierarchicalNSW::getEfSearch)
+      .function("setEfSearch", &HierarchicalNSW::setEfSearch)
       .function("searchKnn", &HierarchicalNSW::searchKnn)
       ;
 

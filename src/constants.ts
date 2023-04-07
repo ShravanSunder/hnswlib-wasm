@@ -7,11 +7,19 @@ export const defaultParams = {
    * @param {boolean} allowReplaceDeleted The flag to replace deleted element when adding new element
    *
    */
-    initIndex: [16, 200, 100, false],
-    /**
-     * @param {boolean} replaceDeleted — The flag to replace a deleted element (default: false)
-     */
-    addPoint: [false],
-  } as const;
-  
-  export type defaultParamtersTypes = keyof typeof  defaultParams;
+  initIndex: [16, 200, 100, false],
+  /**
+   * @param {boolean} replaceDeleted — The flag to replace a deleted element (default: false)
+   */
+  addPoint: [false],
+} as const;
+
+export type defaultParamtersTypes = keyof typeof defaultParams;
+
+export const hnswParamsForAda = {
+  m: 48,
+  efSearch: 24,
+  efConstruction: 32,
+  numNeighbors: 8,
+  dimensions: 1538,
+} as const;

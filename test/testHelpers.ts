@@ -1,40 +1,35 @@
-import {IdbfsFileStore} from "../dist/hnswlib";
-
+import { defaultParams, hnswParamsForAda, IdbfsFileStore } from '../dist/hnswlib';
 
 export const testErrors = {
+  indexSize: /The maximum number of elements has been reached in index/,
+  vectorSize: /Invalid vector size. Must be equal to the dimension of the space./,
+  vectorArgument: /Cannot convert .* to float/,
 
-  indexSize : /The maximum number of elements has been reached in index/,
-  vectorSize : /Invalid vector size. Must be equal to the dimension of the space./,
-  vectorArgument : /Cannot convert .* to float/,
-  
-  unsignedIntArgument : /Cannot convert .* to unsigned int/,
-  
-  arugmentCount : /called with .* arguments, expected .* args!/,
-  
+  unsignedIntArgument: /Cannot convert .* to unsigned int/,
+
+  arugmentCount: /called with .* arguments, expected .* args!/,
+
   stringArgument: /Cannot pass non-string to std::string/,
-  
+
   indexNotInitalized: /Search index has not been initialized, call `initIndex` in advance/,
 
   isNotFunction: /is not a function/,
-}
+};
 
 export type testErrorTypes = keyof typeof testErrors;
 
-
-export const adaDimensions = 1536 as const;
-export const createVectorData = (numOfVec = 100, dimensions: number = adaDimensions) => {
+export const createVectorData = (numOfVec = 100, dimensions: number = hnswParamsForAda.dimensions, start = 0) => {
   const vectors: Float32Array[] = [];
   const labels: number[] = [];
-  
-  for (let i = 0; i < numOfVec; i++) {
-    const vector = Array.from({length: dimensions}, () => Math.random());
+
+  for (let i = start; i < start + numOfVec; i++) {
+    const vector = Array.from({ length: dimensions }, () => Math.random());
     vectors.push(new Float32Array(vector));
     labels.push(i);
   }
-  
-  return {vectors, labels};
-}
 
+  return { vectors, labels };
+};
 
 export type IdbFileData = {
   timestamp: number;
@@ -47,7 +42,7 @@ export const getIdbFileList = async (request: IDBOpenDBRequest): Promise<string[
     request.onsuccess = () => {
       const db: IDBDatabase = request.result;
       console.log('stores', db.objectStoreNames);
-      const transaction = db.transaction(IdbfsFileStore, "readonly");
+      const transaction = db.transaction(IdbfsFileStore, 'readonly');
       const fileDataStore = transaction.objectStore(IdbfsFileStore);
 
       const fileList: string[] = [];
@@ -64,12 +59,16 @@ export const getIdbFileList = async (request: IDBOpenDBRequest): Promise<string[
       };
 
       cursorRequest.onerror = (event: Event) => {
-        reject(new Error("Error while retrieving file list from IDBFS."));
+        reject(new Error('Error while retrieving file list from IDBFS.'));
       };
     };
 
     request.onerror = (event: Event) => {
-      reject(new Error("Error while opening IndexedDB."));
+      reject(new Error('Error while opening IndexedDB.'));
     };
   });
+};
+
+export const sleep = (ms: number) => {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 };

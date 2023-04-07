@@ -16,6 +16,10 @@
  * limitations under the License.
  */
 
+import { EmscriptenModule, EmscriptenModuleFactory } from '@types/emscripten/index';
+
+// Define your specific Emscripten
+
 /** @packageDocumentation */
 
 // define type aliases for various native number types
@@ -31,9 +35,8 @@ type UnsignedLong = number;
 type Float = number;
 type Double = number;
 
-
 /** Distance for search index. `l2`: sum((x_i - y_i)^2), `ip`: 1 - sum(x_i * y_i), `cosine`: 1 - sum(x_i * y_i) / norm(x) * norm(y). */
-export type SpaceName = "l2" | "ip" | "cosine";
+export type SpaceName = 'l2' | 'ip' | 'cosine';
 
 /** Searh result object. */
 export interface SearchResult {
@@ -247,6 +250,20 @@ export class HierarchicalNSW {
    * @param {boolean} replaceDeleted The flag to replace a deleted element (default: false).
    */
   addItems(items: Float32Array[] | number[][], labels: number[], replaceDeleted: boolean): void;
+
+  /**
+   * adds a datum point to the search index.
+   * @param {Float32Array[] | number[][]} items The datum array to be added to the search index.
+   * @param {number} labels The index array of the datum array to be added.
+   * @param {boolean} replaceDeleted The flag to replace a deleted element (default: false).
+   */
+  addItemsWithPtr(
+    vecData: Float32Array | number[],
+    vecSize: number,
+    idVecData: Uint32Array | number[],
+    idVecSize: number,
+    replaceDeleted?: boolean
+  ): void;
   /**
    * marks the element as deleted. The marked element does not appear on the search result.
    * @param {number} label The index of the datum point to be marked.
@@ -304,42 +321,25 @@ export class HierarchicalNSW {
    * returns the `ef` parameter.
    * @return {number} The `ef` parameter value.
    */
-  getEf(): number;
+  getEfSearch(): number;
   /**
    * sets the `ef` parameter.
    * @param {number} ef The size of the dynamic list for the nearest neighbors.
    */
-  setEf(ef: number): void;
+  setEfSearch(ef: number): void;
 }
 
 export class EmscriptenFileSystemManager {
   constructor();
-  static initializeFileSystem(fsType:'NODEFS' | 'IDBFS'): void;
+  static initializeFileSystem(fsType: 'NODEFS' | 'IDBFS'): void;
   static isInitialized(): boolean;
   /**
    * Syncs the Emscripten file system with the persistent storage IDBFS
-   * @param read read (bool) – true to initialize Emscripten’s file system data with the data from the file system’s persistent source, and false to save Emscripten`s file system data to the file system’s persistent source. 
-   * @param callback 
-   */
-  static syncFs(read: boolean, callback: ()=>void): Promise<boolean>;
-}
-
-
-export interface HnswlibModule {
-  normalizePoint(vec: number[]): number[];
-  /**
-   * Syncs the Emscripten file system with the persistent storage IDBFS.
    * @param read read (bool) – true to initialize Emscripten’s file system data with the data from the file system’s persistent source, and false to save Emscripten`s file system data to the file system’s persistent source.
-   * @returns 
+   * @param callback
    */
-  syncFs: (read: boolean) => Promise<boolean>;
-  L2Space: typeof L2Space
-  InnerProductSpace: typeof InnerProductSpace
-  BruteforceSearch: typeof BruteforceSearch
-  HierarchicalNSW: typeof HierarchicalNSW
-  EmscriptenFileSystemManager: typeof EmscriptenFileSystemManager
+  static syncFs(read: boolean, callback: () => void): Promise<boolean>;
 }
 
-declare function factory(args?: Partial<EmscriptenModule> ): Promise<HnswlibModule>;
+declare const factory: EmscriptenModuleFactory<HnswlibModule>;
 export default factory;
-export type Factory = typeof factory;

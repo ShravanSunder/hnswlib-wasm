@@ -16,14 +16,16 @@
     "jsx": "preserve",
     "types": [ 
       "vitest/importMeta",
-      "vitest/globals"
+      "vitest/globals",
     ],
     "incremental": false,
     "paths": {
       "~lib/*": ["./lib/*"],
       "~test/*": ["./test/*"],
+      "~bench/*": ["./bench/*"],
+      "~dist/*": ["./dist/*"],
     }
   },
-  "include": ["lib/**/*.ts", "lib/**/*.d.ts", "src/**/*.ts", "src/**/*.d.ts", "test/**/*"],
-  "files": [".eslintrc.cjs", ]
+  "include": ["lib/**/*.ts", "lib/**/*.d.ts", "src/**/*.ts", "src/**/*.d.ts", "test/**/*", "bench", "testGlobals.d.ts" ],
+  "files": [".eslintrc.cjs", "vite.config.ts", "vitest.setup.ts" ]
 }

@@ -1,7 +1,8 @@
-import { testErrors } from "./testHelpers";
-import {  BruteforceSearch, HnswlibModule, L2Space, loadHnswlib } from "~lib/index";
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+import { testErrors } from '~test/testHelpers';
+import { BruteforceSearch, HnswlibModule, L2Space, loadHnswlib } from '~lib/index';
 
-describe("L2Space", () => {
+describe('L2Space', () => {
   let hnswlib: HnswlibModule;
   let space: L2Space;
 
@@ -11,56 +12,55 @@ describe("L2Space", () => {
     space = new hnswlib.L2Space(3);
   });
 
-  it("throws an error if no arguments are given", () => {
+  it('throws an error if no arguments are given', () => {
     expect(() => {
       // @ts-expect-error for testing
       new hnswlib.L2Space();
     }).toThrow(
-      "Tried to invoke ctor of L2Space with invalid number of parameters (0) - expected (1) parameters instead!"
+      'Tried to invoke ctor of L2Space with invalid number of parameters (0) - expected (1) parameters instead!'
     );
   });
 
-  it("throws an error if given a non-Number argument", () => {
+  it('throws an error if given a non-Number argument', () => {
     expect(() => {
       // @ts-expect-error for testing
-      new hnswlib.L2Space("yes");
-      
-    }).toThrow("Cannot convert \"yes\" to unsigned int");
+      new hnswlib.L2Space('yes');
+    }).toThrow('Cannot convert "yes" to unsigned int');
   });
 
-  describe("#getNumDimensions", () => {
-    it("returns number of dimensions", () => {
+  describe('#getNumDimensions', () => {
+    it('returns number of dimensions', () => {
       expect(space.getNumDimensions()).toBe(3);
     });
   });
 
-  describe("#distance", () => {
-    it("throws an error if no arguments are given", () => {
+  describe('#distance', () => {
+    it('throws an error if no arguments are given', () => {
       expect(() => {
         // @ts-expect-error for testing
         space.distance();
       }).toThrow(/function L2Space.distance called with 0 arguments, expected 2 args!/);
     });
 
-    it("throws an error if 1 argument are given", () => {
+    it('throws an error if 1 argument are given', () => {
       expect(() => {
         // @ts-expect-error for testing
-        space.distance([1,1,3]);
+        space.distance([1, 1, 3]);
       }).toThrow(/function L2Space.distance called with 1 arguments, expected 2 args!/);
     });
 
-    it("throws an error if given a non-Array argument", () => {
+    it('throws an error if given a non-Array argument', () => {
       expect(() => {
         // @ts-expect-error for testing
-        space.distance("foo", [0, 1, 2]);
+        space.distance('foo', [0, 1, 2]);
       }).toThrow();
       expect(() => {
         // @ts-expect-error for testing
-        space.distance([0, 1, 2], "bar");
-      }).toThrow(testErrors.vectorArgument)
+        space.distance([0, 1, 2], 'bar');
+      }).toThrow(testErrors.vectorArgument);
     });
 
-    it("throws an error if given an array with a length different from the number of dimensions", () => {
+    it('throws an error if given an array with a length different from the number of dimensions', () => {
       expect(() => {
         space.distance([0, 1, 2, 3], [3, 4, 5]);
       }).toThrow(testErrors.vectorSize);
@@ -69,7 +69,7 @@ describe("L2Space", () => {
       }).toThrow(testErrors.vectorSize);
     });
 
-    it("calculates squared Euclidean distance between two arrays", () => {
+    it('calculates squared Euclidean distance between two arrays', () => {
       // @ts-ignore
       //expect(space.distance(new Float32Array([1, 2, 3]), new Float32Array([3, 4, 5]))).toBeCloseTo(12.0, 8);
       expect(space.distance([1, 2, 3], [3, 4, 5])).toBeCloseTo(12.0, 8);
