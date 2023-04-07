@@ -22,6 +22,15 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node }}
+    - name: 'cache'
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.yarn
+          ~/node_modules
+        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
     - name: Install
       run: yarn install
     - name: Test
@@ -36,6 +45,15 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 18.x
+    - name: 'cache'
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.yarn
+          ~/node_modules
+        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}    
     - name: Install
       run: yarn install
     - name: Build
@@ -52,6 +70,15 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 18.x
+    - name: 'cache'
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.yarn
+          ~/node_modules
+        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}    
     - name: Install
       run: yarn install
     - name: Test
