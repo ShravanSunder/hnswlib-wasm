@@ -765,14 +765,14 @@ namespace emscripten {
       return dim_;
     }
 
-    uint32_t getEf() const {
+    uint32_t getEfSearch() const {
       if (index_ == nullptr) {
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
       return index_ == nullptr ? 0 : index_->ef_;
     }
 
-    void setEf(uint32_t ef) {
+    void setEfSearch(uint32_t ef) {
       if (index_ == nullptr) {
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
@@ -836,8 +836,8 @@ namespace emscripten {
       .function("unmarkDelete", &HierarchicalNSW::unmarkDelete)
       .function("getCurrentCount", &HierarchicalNSW::getCurrentCount)
       .function("getNumDimensions", &HierarchicalNSW::getNumDimensions)
-      .function("getEf", &HierarchicalNSW::getEf)
-      .function("setEf", &HierarchicalNSW::setEf)
+      .function("getEfSearch", &HierarchicalNSW::getEfSearch)
+      .function("setEfSearch", &HierarchicalNSW::setEfSearch)
       .function("searchKnn", &HierarchicalNSW::searchKnn)
       ;
 

@@ -15,6 +15,6 @@ export type normalizePoint = HnswlibModule['normalizePoint'];
 
 
 export * from './loadHnswlib';
-export * from "./defaultTypes"
+export * from "./constants"
 
 export const IdbfsFileStore = "FILE_DATA";

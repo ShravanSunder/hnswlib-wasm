@@ -1,27 +1,23 @@
-
-import { resolve } from 'path'
-import { defineConfig } from 'vitest/config'
-import wasm from "vite-plugin-wasm";
-import topLevelAwait from "vite-plugin-top-level-await";
-import commonjs from 'vite-plugin-commonjs'
-import { viteStaticCopy } from 'vite-plugin-static-copy'
-import nodeResolve from "@rollup/plugin-node-resolve";
-import tsconfigPaths from 'vite-tsconfig-paths'
-import dts from 'vite-plugin-dts'
-import checker from 'vite-plugin-checker'
-import eslint from 'vite-plugin-eslint'
-import vitest from 'eslint-plugin-vitest'
-
-
-
+import { resolve } from 'path';
+import { defineConfig } from 'vitest/config';
+import wasm from 'vite-plugin-wasm';
+import topLevelAwait from 'vite-plugin-top-level-await';
+import commonjs from 'vite-plugin-commonjs';
+import { viteStaticCopy } from 'vite-plugin-static-copy';
+import nodeResolve from '@rollup/plugin-node-resolve';
+import tsconfigPaths from 'vite-tsconfig-paths';
+import dts from 'vite-plugin-dts';
+import checker from 'vite-plugin-checker';
+import eslint from 'vite-plugin-eslint';
+import vitest from 'eslint-plugin-vitest';
 
 export default defineConfig({
   plugins: [
     checker({
-      typescript: { tsconfigPath: "./tsconfig.build.json" },
+      typescript: { tsconfigPath: './tsconfig.build.json' },
     }),
     eslint({
-      include: ['./lib/**/*.ts']
+      include: ['./lib/**/*.ts'],
     }),
     wasm(),
     topLevelAwait(),
@@ -38,17 +34,16 @@ export default defineConfig({
         {
           src: './lib/hnswlib-wasm.d.ts',
           dest: './',
-        }
-      ]
-    }), 
+        },
+      ],
+    }),
     tsconfigPaths(),
     dts({
       insertTypesEntry: true,
       tsConfigFilePath: './tsconfig.build.json',
-    })
+    }),
   ],
-  optimizeDeps: {
-  },
+  optimizeDeps: {},
   build: {
     minify: false,
     sourcemap: true,
@@ -58,24 +53,25 @@ export default defineConfig({
       name: 'hnswlib-wasm',
       // the proper extensions will be added
       fileName: 'hnswlib',
-      formats: ['es']
+      formats: ['es'],
     },
     commonjsOptions: {
       include: [],
-      exclude: []
+      exclude: [],
     },
     rollupOptions: {
       // make sure to externalize deps that shouldn't be bundled
       // into your library
       external: [],
     },
-  }, 
+  },
   test: {
     globals: true,
+    include: ['./test/tests/**/*.test.ts'],
     setupFiles: ['./vitest.setup.ts'],
     environment: 'happy-dom',
     benchmark: {
-      include: ['**/*.bench.ts'],
+      include: ['**/*.bench.test.ts'],
     },
     // exclude: ['test/**/*.bench.ts'],
     // browser: {
@@ -84,6 +80,5 @@ export default defineConfig({
     //   headless: true,
     //   provider: 'playwright'
     // }
-
-  }
-})
+  },
+});

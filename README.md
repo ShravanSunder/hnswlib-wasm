@@ -69,23 +69,37 @@ const result = index.searchKnn(query, numNeighbors);
 console.table(result);
 ```
 
-## More on hnswlib
-HNSW (Hierarchical Navigable Small World) is a graph-based index structure for efficient similarity search in high-dimensional spaces. It has several parameters that can be tuned to control the trade-off between search quality and index size or construction time. Here are some of the key parameters:
+# HNSW Algorithm Parameters for hnswlib-wasm
+This section will provide an overview of the HNSW algorithm parameters and their impact on performance when using the hnswlib-wasm library. 
+HNSW (Hierarchical Navigable Small World) is a graph-based index structure for efficient similarity search in high-dimensional spaces. It has several parameters that can be tuned to control the trade-off between search quality and index size or construction time. Here are some of the key parameters.
 
-- M: This controls the maximum number of connections each node can have in the graph. Increasing M can improve search quality at the cost of index size and construction time.
+## Search Parameters
+### efSearch
+efSearch is the size of the dynamic list for the nearest neighbors used during the search. Higher efSearch values lead to more accurate but slower searches. efSearch cannot be set lower than the number of queried nearest neighbors k and can be any value between k and the size of the dataset.
 
-- efConstruction: This controls the maximum number of nodes that can be visited during the construction of the graph. Increasing efConstruction can improve search quality at the cost of construction time.
+## Construction Parameters
+### M
+M is the number of bi-directional links created for every new element during index construction. A reasonable range for M is 2-100. Higher M values work better on datasets with high intrinsic dimensionality and/or high recall, while lower M values work better for datasets with low intrinsic dimensionality and/or low recall. The parameter also determines the algorithms memory consumption, which is roughly M * 8-10 bytes per stored element.
 
-- efSearch: This controls the maximum number of nodes that can be visited during a search. Increasing efSearch can improve search quality at the cost of search time.
+### efConstruction
+efConstruction controls the index construction time and accuracy. Bigger efConstruction values lead to longer construction times but better index quality. At some point, increasing efConstruction does not improve the quality of the index. To check if the selected efConstruction value is appropriate, measure recall for M nearest neighbor search when efSearch = efConstruction. If the recall is lower than 0.9, there is room for improvement.
 
-- levelMult: This controls the number of connections between nodes at adjacent levels in the graph. Increasing levelMult can improve search quality at the cost of index size and construction time.
+## Parameter Selection for hnswlib-wasm
 
-- randomSeed: This sets the seed for the random number generator used in the construction of the graph. Setting the seed can ensure reproducibility of results.
+When using hnswlib-wasm, it is essential to choose appropriate values for M, efSearch, and efConstruction based on your datasets size and dimensionality. Since hnswlib-wasm is running in the browser, you should consider the available memory and performance limitations. Here are some recommendations:
 
-- distance: This specifies the distance metric to be used in the similarity search. The choice of distance metric depends on the nature of the data being indexed.
+### M: 
+Choose a value in the range of 12-48, as it works well for most use cases. You may need to experiment to find the optimal value for your specific dataset.
 
+### efSearch: 
+Start with a value close to M and adjust it based on your desired trade-off between search speed and accuracy. Lower values will be faster but less accurate, while higher values will be more accurate but slower.
 
+### efConstruction: 
+Set this value considering the expected query volume. If you anticipate low query volume, you can set a higher value for efConstruction to improve recall with minimal impact on search time, especially when using lower M values.
 
+Remember that higher M values will increase the memory usage of the index, so you should balance performance and memory constraints when choosing your parameters for hnswlib-wasm.
+
+# Other Notes
 ## License
 
 hnswlib-wasm is available as open source under the terms of the [Apache-2.0 License](https://www.apache.org/licenses/LICENSE-2.0).

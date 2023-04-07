@@ -31,9 +31,8 @@ type UnsignedLong = number;
 type Float = number;
 type Double = number;
 
-
 /** Distance for search index. `l2`: sum((x_i - y_i)^2), `ip`: 1 - sum(x_i * y_i), `cosine`: 1 - sum(x_i * y_i) / norm(x) * norm(y). */
-export type SpaceName = "l2" | "ip" | "cosine";
+export type SpaceName = 'l2' | 'ip' | 'cosine';
 
 /** Searh result object. */
 export interface SearchResult {
@@ -304,42 +303,41 @@ export class HierarchicalNSW {
    * returns the `ef` parameter.
    * @return {number} The `ef` parameter value.
    */
-  getEf(): number;
+  getEfSearch(): number;
   /**
    * sets the `ef` parameter.
    * @param {number} ef The size of the dynamic list for the nearest neighbors.
    */
-  setEf(ef: number): void;
+  setEfSearch(ef: number): void;
 }
 
 export class EmscriptenFileSystemManager {
   constructor();
-  static initializeFileSystem(fsType:'NODEFS' | 'IDBFS'): void;
+  static initializeFileSystem(fsType: 'NODEFS' | 'IDBFS'): void;
   static isInitialized(): boolean;
   /**
    * Syncs the Emscripten file system with the persistent storage IDBFS
-   * @param read read (bool) – true to initialize Emscripten’s file system data with the data from the file system’s persistent source, and false to save Emscripten`s file system data to the file system’s persistent source. 
-   * @param callback 
+   * @param read read (bool) – true to initialize Emscripten’s file system data with the data from the file system’s persistent source, and false to save Emscripten`s file system data to the file system’s persistent source.
+   * @param callback
    */
-  static syncFs(read: boolean, callback: ()=>void): Promise<boolean>;
+  static syncFs(read: boolean, callback: () => void): Promise<boolean>;
 }
-
 
 export interface HnswlibModule {
   normalizePoint(vec: number[]): number[];
   /**
    * Syncs the Emscripten file system with the persistent storage IDBFS.
    * @param read read (bool) – true to initialize Emscripten’s file system data with the data from the file system’s persistent source, and false to save Emscripten`s file system data to the file system’s persistent source.
-   * @returns 
+   * @returns
    */
   syncFs: (read: boolean) => Promise<boolean>;
-  L2Space: typeof L2Space
-  InnerProductSpace: typeof InnerProductSpace
-  BruteforceSearch: typeof BruteforceSearch
-  HierarchicalNSW: typeof HierarchicalNSW
-  EmscriptenFileSystemManager: typeof EmscriptenFileSystemManager
+  L2Space: typeof L2Space;
+  InnerProductSpace: typeof InnerProductSpace;
+  BruteforceSearch: typeof BruteforceSearch;
+  HierarchicalNSW: typeof HierarchicalNSW;
+  EmscriptenFileSystemManager: typeof EmscriptenFileSystemManager;
 }
 
-declare function factory(args?: Partial<EmscriptenModule> ): Promise<HnswlibModule>;
+declare function factory(args?: Partial<EmscriptenModule>): Promise<HnswlibModule>;
 export default factory;
 export type Factory = typeof factory;

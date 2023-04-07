@@ -24,6 +24,6 @@
       "~test/*": ["./test/*"],
     }
   },
-  "include": ["lib/**/*.ts", "lib/**/*.d.ts", "src/**/*.ts", "src/**/*.d.ts", "test/**/*"],
+  "include": ["lib/**/*.ts", "lib/**/*.d.ts", "src/**/*.ts", "src/**/*.d.ts", "test/**/*", "test/bench"],
   "files": [".eslintrc.cjs", ]
 }
