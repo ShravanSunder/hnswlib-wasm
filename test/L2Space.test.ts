@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { testErrors } from '../testHelpers';
+import { testErrors } from '~test/testHelpers';
 import { BruteforceSearch, HnswlibModule, L2Space, loadHnswlib } from '~lib/index';
 
 describe('L2Space', () => {

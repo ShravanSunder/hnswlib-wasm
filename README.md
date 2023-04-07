@@ -71,7 +71,12 @@ console.table(result);
 
 # HNSW Algorithm Parameters for hnswlib-wasm
 This section will provide an overview of the HNSW algorithm parameters and their impact on performance when using the hnswlib-wasm library. 
-HNSW (Hierarchical Navigable Small World) is a graph-based index structure for efficient similarity search in high-dimensional spaces. It has several parameters that can be tuned to control the trade-off between search quality and index size or construction time. Here are some of the key parameters.
+HNSW (Hierarchical Navigable Small World) is a graph-based index structure for efficient similarity search in high-dimensional spaces. 
+
+![](https://d33wubrfki0l68.cloudfront.net/1fcaebe70c031d408ae082da355bfe0c6ecc04ac/ba768/images/similarity-search-indexes16.jpg) Image from [pinecone.io](https://www.pinecone.io/learn/hnsw/)
+
+
+It has several parameters that can be tuned to control the trade-off between search quality and index size or construction time. Here are some of the key parameters.
 
 ## Search Parameters
 ### efSearch
@@ -98,6 +103,17 @@ Start with a value close to M and adjust it based on your desired trade-off betw
 Set this value considering the expected query volume. If you anticipate low query volume, you can set a higher value for efConstruction to improve recall with minimal impact on search time, especially when using lower M values.
 
 Remember that higher M values will increase the memory usage of the index, so you should balance performance and memory constraints when choosing your parameters for hnswlib-wasm.
+
+## Resources
+
+[Learn hnsw by pinecone](https://www.pinecone.io/learn/hnsw/)
+
+[Vector indexes by pinecone](https://www.pinecone.io/learn/vector-indexes/)
+
+Images from [pinecone.io](https://www.pinecone.io/learn/hnsw/)
+![](https://d33wubrfki0l68.cloudfront.net/f8df59c49b28522dea11e4293307af2e4f8d97ed/a6992/images/hnsw-9.jpg)
+![](https://d33wubrfki0l68.cloudfront.net/e5194e6f5b1aad4b940e0d3f1957b71bf6c2f25b/40135/images/hnsw-10.jpg)
+![](https://d33wubrfki0l68.cloudfront.net/1b0b0b0b5b1b0b0b0b0b0b0b0b0b0b0b0b0b0b0b/40135/images/hnsw-11.jpg)
 
 # Other Notes
 ## License

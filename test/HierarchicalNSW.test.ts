@@ -1,6 +1,5 @@
-import { defaultParams, HierarchicalNSW, HnswlibModule, loadHnswlib } from '../../dist/hnswlib';
-import { adaDimensions, createVectorData, getIdbFileList } from '~test/testHelpers';
-import { testErrors } from '../testHelpers';
+import { defaultParams, HierarchicalNSW, HnswlibModule, loadHnswlib } from '~dist/hnswlib';
+import { adaDimensions, createVectorData, getIdbFileList, testErrors } from '~test/testHelpers';
 import 'fake-indexeddb/auto';
 import { indexedDB } from 'fake-indexeddb';
 import { expect } from 'vitest';
@@ -243,13 +242,13 @@ describe('hnswlib.HierarchicalNSW', () => {
 
     it('throws an error if called before the index is initialized', () => {
       expect(() => {
-        index.getEf();
+        index.getEfSearch();
       }).toThrow('Search index has not been initialized, call `initIndex` in advance.');
     });
 
     it('returns ef parameter value', () => {
       index.initIndex(3, ...defaultParams.initIndex);
-      expect(index.getEf()).toBe(10);
+      expect(index.getEfSearch()).toBe(10);
     });
   });
 
@@ -261,27 +260,27 @@ describe('hnswlib.HierarchicalNSW', () => {
     it('throws an error if no arguments are given', () => {
       expect(() => {
         // @ts-expect-error for testing
-        index.setEf();
+        index.setEfSearch();
       }).toThrow(testErrors.arugmentCount);
     });
 
     it('throws an error if given a non-Number argument', () => {
       expect(() => {
         // @ts-expect-error for testing
-        index.setEf('0');
+        index.setEfSearch('0');
       }).toThrow(testErrors.unsignedIntArgument);
     });
 
     it('throws an error if called before the index is initialized', () => {
       expect(() => {
-        index.setEf(123);
+        index.setEfSearch(123);
       }).toThrow('Search index has not been initialized, call `initIndex` in advance.');
     });
 
     it('sets ef parameter value', () => {
       index.initIndex(3, ...defaultParams.initIndex);
-      index.setEf(123);
-      expect(index.getEf()).toBe(123);
+      index.setEfSearch(123);
+      expect(index.getEfSearch()).toBe(123);
     });
   });
 
@@ -589,7 +588,7 @@ describe('hnswlib.HierarchicalNSW', () => {
         index = new hnswlib.HierarchicalNSW('l2', adaDimensions);
         index.initIndex(baseIndexSize, m, efConstruction, undefined, true);
         index.addItems(testVectorData.vectors, testVectorData.labels, ...defaultParams.addPoint);
-        index.setEf(efSearch);
+        index.setEfSearch(efSearch);
       }
     };
 

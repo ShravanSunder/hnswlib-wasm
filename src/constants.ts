@@ -16,10 +16,10 @@ export const defaultParams = {
 
 export type defaultParamtersTypes = keyof typeof defaultParams;
 
-export const hnswlibParamsForAda = {
-  efSearch: 32,
+export const hnswParamsForAda = {
+  efSearch: 24,
   efConstruction: 32,
   m: 48,
-  k: 12,
+  numNeighbors: 8,
   dimensions: 1538,
 } as const;

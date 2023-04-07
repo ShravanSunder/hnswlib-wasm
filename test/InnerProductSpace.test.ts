@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { BruteforceSearch, HnswlibModule, InnerProductSpace, loadHnswlib } from '~lib/index';
-import { testErrors } from '../testHelpers';
+import { HnswlibModule, InnerProductSpace, loadHnswlib } from '~lib/index';
+import { testErrors } from '~test/testHelpers';
 
 describe('InnerProductSpace', () => {
   let hnswlib: HnswlibModule;

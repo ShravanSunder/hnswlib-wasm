@@ -67,7 +67,8 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    include: ['./test/tests/**/*.test.ts'],
+    include: ['test/**/*.test.ts'],
+    //exclude: ['bench/**/*.ts'],
     setupFiles: ['./vitest.setup.ts'],
     environment: 'happy-dom',
     benchmark: {
