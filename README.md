@@ -25,7 +25,8 @@ $ yarn add hnswlib-wasm
 
 ## Usage
 
-tbd, see tests folder for now HierarchicalNSW.test.ts! 
+TBD
+> see tests folder for now `HierarchicalNSW.test.ts` and [hnswlib-node API Documentation](https://yoshoku.github.io/hnswlib-node/doc/) docs! 
 
 # HNSW Algorithm Parameters for hnswlib-wasm
 This section will provide an overview of the HNSW algorithm parameters and their impact on performance when using the hnswlib-wasm library. 
