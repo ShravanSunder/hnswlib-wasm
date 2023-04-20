@@ -25,7 +25,38 @@ $ yarn add hnswlib-wasm
 
 ## Usage
 
-TBD
+First create a runtime instance of the library
+```ts
+import { loadHnswlib } from 'hnswlib-wasm';
+
+const lib = await loadHnswlib();
+```
+
+You can then create the index and use it
+```ts
+// here you're creating a new index with the l2 distance metric and 1000 as the max number of elements
+const hnswIndex = lib.HierarchicalNSW('l2', 100);
+
+// Initalize the index, with the dimensions (1536), m, efConstruction.  See the section below on parameters for more details. These cannot be changed after index is created.
+index.initIndex(1536, 36, 16, 200, true);
+// set efSearch parameters.  this can be changed after index is created.
+index.setEfSearch(efSearch);
+
+// now you can add items to the index
+index.addItems(vectors, labelIds);
+
+// now you can search the index
+const result1 = index.searchKnn(vectors[10], 10, undefined);
+
+// you can also search the index with a label filter
+const labelFilter = (label: number) => {
+  return label >= 10 && label < 20;
+}
+const result2 = index.searchKnn(testVectorData.vectors[10], 10, labelFilter);
+
+```
+
+More Usage TBD
 > see tests folder for now `HierarchicalNSW.test.ts` and [hnswlib-node API Documentation](https://yoshoku.github.io/hnswlib-node/doc/) docs! 
 
 # HNSW Algorithm Parameters for hnswlib-wasm
