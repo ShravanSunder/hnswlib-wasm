@@ -89,7 +89,6 @@ await lib.syncFs(true); // Read data from the persistent source
 await lib.syncFs(false); // Save data to the persistent source
 ```
 
-# HNSW Overview
 
 ## HNSW Algorithm Parameters for hnswlib-wasm
 This section will provide an overview of the HNSW algorithm parameters and their impact on performance when using the hnswlib-wasm library. 
@@ -100,15 +99,13 @@ HNSW (Hierarchical Navigable Small World) is a graph-based index structure for e
 
 It has several parameters that can be tuned to control the trade-off between search quality and index size or construction time. Here are some of the key parameters.
 
-### Search Parameters
-#### efSearch
+### Search Parameters: efSearch
 efSearch is the size of the dynamic list for the nearest neighbors used during the search. Higher efSearch values lead to more accurate but slower searches. efSearch cannot be set lower than the number of queried nearest neighbors k and can be any value between k and the size of the dataset.
 
-### Construction Parameters
-#### M
+### Construction Parameters: M
 M is the number of bi-directional links created for every new element during index construction. A reasonable range for M is 2-100. Higher M values work better on datasets with high intrinsic dimensionality and/or high recall, while lower M values work better for datasets with low intrinsic dimensionality and/or low recall. The parameter also determines the algorithms memory consumption, which is roughly M * 8-10 bytes per stored element.
 
-#### efConstruction
+### Construction Parameters: efConstruction
 efConstruction controls the index construction time and accuracy. Bigger efConstruction values lead to longer construction times but better index quality. At some point, increasing efConstruction does not improve the quality of the index. To check if the selected efConstruction value is appropriate, measure recall for M nearest neighbor search when efSearch = efConstruction. If the recall is lower than 0.9, there is room for improvement.
 
 ## Parameter Selection for hnswlib-wasm
