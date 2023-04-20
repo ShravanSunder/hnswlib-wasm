@@ -59,7 +59,8 @@ const result2 = index.searchKnn(testVectorData.vectors[10], 10, labelFilter);
 More Usage TBD
 > see tests folder for now `HierarchicalNSW.test.ts` and [hnswlib-node API Documentation](https://yoshoku.github.io/hnswlib-node/doc/) docs! 
 
-# HNSW Algorithm Parameters for hnswlib-wasm
+# HNSW Basics
+## HNSW Algorithm Parameters for hnswlib-wasm
 This section will provide an overview of the HNSW algorithm parameters and their impact on performance when using the hnswlib-wasm library. 
 HNSW (Hierarchical Navigable Small World) is a graph-based index structure for efficient similarity search in high-dimensional spaces. 
 
