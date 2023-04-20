@@ -1,11 +1,10 @@
 # hnswlib-wasm
 
-This is a wasm version of [hnswlib](https://github.com/nmslib/hnswlib). Created by @ShravanSunder
+This is a wasm version of [hnswlib](https://github.com/nmslib/hnswlib) index library written in c++. This wasm port was created by @ShravanSunder with the emcc wasm compiler, see repo [here](https://github.com/shravansunder/hnswlib-wasm)
 
-Created with the help of library [hnswlib-node](https://github.com/yoshoku/hnswlib-node/).  See his wonderful docs here, [documentation](https://yoshoku.github.io/hnswlib-node/doc/) Thanks @yoshoku! 
+Inspired by the library [hnswlib-node](https://github.com/yoshoku/hnswlib-node/). @yoshoku has some wonderful docs here, [documentation](https://yoshoku.github.io/hnswlib-node/doc/) Thanks @yoshoku! 
 
-> Note:  This is still a beta!
-
+> Note:  This library is still in early days!  Its being built for a use case i had to run hnswlib in the browser
 
 `hnswlib-wasm` provides wasm bindings for [Hnswlib](https://github.com/nmslib/hnswlib)
 that implements approximate nearest-neghbor search based on
@@ -16,6 +15,7 @@ hierarchical navigable small world graphs.  It will work in browser and is compi
 ```sh
 $ yarn add hnswlib-wasm
 ```
+See the npm package [here](https://www.npmjs.com/package/hnswlib-wasm)
 
 ## Documentation
 
