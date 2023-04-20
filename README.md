@@ -61,9 +61,9 @@ More usage examples to be added.
 
 > For now, see the `HierarchicalNSW.test.ts` file in the tests folder and refer to the [hnswlib-node API Documentation](https://yoshoku.github.io/hnswlib-node/doc/).
 
-### Expanded IDBFS## Extended IndexedDB (IDBFS) Support
+## Extended IndexedDB (IDBFS) Support
 
-The `hnswlib-wasm` library provides extended support for IndexedDB (IDBFS) to store and manage the search index in the browser. This allows you to save and load the search index easily in a web environment.
+The `hnswlib-wasm` library provides extended support for IndexedDB (IDBFS) to store and manage the search index in the browser. This allows you to save and load the search index easily in a web environment and you don't have to move data from the emcc file system to javascript memory.  It uses the FS from Emscripten to save and load the index via the virtual file system.  The virtual file system is synchronized with IDBFS.
 
 
 #### Saving and Loading the Search Index with IDBFS
