@@ -1,65 +1,97 @@
 # hnswlib-wasm
 
-This is a wasm version of [hnswlib](https://github.com/nmslib/hnswlib) index library written in c++. This wasm port was created by @ShravanSunder with the emcc wasm compiler, see repo [here](https://github.com/shravansunder/hnswlib-wasm)
+This is a WebAssembly (Wasm) version of the [hnswlib](https://github.com/nmslib/hnswlib) index library written in C++. This Wasm port was created by @ShravanSunder using the emcc Wasm compiler, see the repository [here](https://github.com/shravansunder/hnswlib-wasm).
 
-Inspired by the library [hnswlib-node](https://github.com/yoshoku/hnswlib-node/). @yoshoku has some wonderful docs here, [documentation](https://yoshoku.github.io/hnswlib-node/doc/) Thanks @yoshoku! 
+Inspired by the library [hnswlib-node](https://github.com/yoshoku/hnswlib-node/). @yoshoku has provided some wonderful [documentation](https://yoshoku.github.io/hnswlib-node/doc/) for hnswlib-node. Thanks, @yoshoku!
 
-> Note:  This library is still in early days!  Its being built for a use case i had to run hnswlib in the browser
+> Note: This library is still in its early days! It is being built for a use case that requires running hnswlib in the browser.
 
-`hnswlib-wasm` provides wasm bindings for [Hnswlib](https://github.com/nmslib/hnswlib)
-that implements approximate nearest-neghbor search based on
-hierarchical navigable small world graphs.  It will work in browser and is compiled with emscripten.
+`hnswlib-wasm` provides wasm bindings for [Hnswlib](https://github.com/nmslib/hnswlib) that implements approximate nearest-neighbor search based on hierarchical navigable small world graphs. It works in browsers and is compiled with Emscripten.
 
 ## Installation
 
 ```sh
 $ yarn add hnswlib-wasm
 ```
-See the npm package [here](https://www.npmjs.com/package/hnswlib-wasm)
+
+See the npm package [here](https://www.npmjs.com/package/hnswlib-wasm).
 
 ## Documentation
 
-* [hnswlib-node API Documentation](https://yoshoku.github.io/hnswlib-node/doc/) by @yoshoku for hnswlib-node is a accurate description of the API.  I will have modified the typescript definitions the API to work with wasm.  I will update this documentation as I go.  I will also add more examples.
-* The big differences are loading and saving the index.  It supports `indexedDB` (in browser) and uses FS from emscripten to save and load the index via the virtual file system and IDBFS.
-* See the changelog from `hnswlib-node` for more details by @yoshoku [changelog](./CHANGELOG.md)
+* [hnswlib-node API Documentation](https://yoshoku.github.io/hnswlib-node/doc/) by @yoshoku for hnswlib-node provides an accurate description of the API. The TypeScript definitions of the API have been modified to work with Wasm. The documentation will be updated as the library progresses, and more examples will be added.
+* The major differences are in loading and saving the index. It supports `indexedDB` (in browser) and uses FS from Emscripten to save and load the index via the virtual file system and IDBFS.
+* See the changelog from `hnswlib-node` for more details by @yoshoku [changelog](./CHANGELOG.md).
 
-## Usage
+### Usage
 
-First create a runtime instance of the library
+First, create a runtime instance of the library:
+
 ```ts
 import { loadHnswlib } from 'hnswlib-wasm';
 
 const lib = await loadHnswlib();
 ```
 
-You can then create the index and use it
+You can then create the index and use it:
+
 ```ts
-// here you're creating a new index with the l2 distance metric and 1000 as the max number of elements
+// Here you're creating a new index with the L2 distance metric and 1000 as the max number of elements
 const hnswIndex = lib.HierarchicalNSW('l2', 100);
 
-// Initalize the index, with the dimensions (1536), m, efConstruction.  See the section below on parameters for more details. These cannot be changed after index is created.
+// Initialize the index with the dimensions (1536), m, efConstruction. See the section below on parameters for more details. These cannot be changed after the index is created.
 index.initIndex(1536, 36, 16, 200, true);
-// set efSearch parameters.  this can be changed after index is created.
+
+// Set efSearch parameters. This can be changed after the index is created.
 index.setEfSearch(efSearch);
 
-// now you can add items to the index
+// Now you can add items to the index
 index.addItems(vectors, labelIds);
 
-// now you can search the index
+// Now you can search the index
 const result1 = index.searchKnn(vectors[10], 10, undefined);
 
-// you can also search the index with a label filter
+// You can also search the index with a label filter
 const labelFilter = (label: number) => {
   return label >= 10 && label < 20;
 }
 const result2 = index.searchKnn(testVectorData.vectors[10], 10, labelFilter);
-
 ```
 
-More Usage TBD
-> see tests folder for now `HierarchicalNSW.test.ts` and [hnswlib-node API Documentation](https://yoshoku.github.io/hnswlib-node/doc/) docs! 
+More usage examples to be added.
 
-# HNSW Algorithm Parameters for hnswlib-wasm
+> For now, see the `HierarchicalNSW.test.ts` file in the tests folder and refer to the [hnswlib-node API Documentation](https://yoshoku.github.io/hnswlib-node/doc/).
+
+### Expanded IDBFS## Extended IndexedDB (IDBFS) Support
+
+The `hnswlib-wasm` library provides extended support for IndexedDB (IDBFS) to store and manage the search index in the browser. This allows you to save and load the search index easily in a web environment.
+
+
+#### Saving and Loading the Search Index with IDBFS
+
+To save the search index, use the `writeIndex` method:
+
+```ts
+await index.writeIndex('savedIndex');
+```
+
+To load a previously saved search index, use the `readIndex` method:
+
+```ts
+await index.readIndex('savedIndex', false);
+```
+
+#### Synchronizing the Emscripten File System with IDBFS
+
+The `syncFs` method is used to synchronize the Emscripten file system with the persistent storage IDBFS. You can use this method to save or read data from the file system's persistent source.
+
+```ts
+await lib.syncFs(true); // Read data from the persistent source
+await lib.syncFs(false); // Save data to the persistent source
+```
+
+# HNSW Overview
+
+## HNSW Algorithm Parameters for hnswlib-wasm
 This section will provide an overview of the HNSW algorithm parameters and their impact on performance when using the hnswlib-wasm library. 
 HNSW (Hierarchical Navigable Small World) is a graph-based index structure for efficient similarity search in high-dimensional spaces. 
 
@@ -68,15 +100,15 @@ HNSW (Hierarchical Navigable Small World) is a graph-based index structure for e
 
 It has several parameters that can be tuned to control the trade-off between search quality and index size or construction time. Here are some of the key parameters.
 
-## Search Parameters
-### efSearch
+### Search Parameters
+#### efSearch
 efSearch is the size of the dynamic list for the nearest neighbors used during the search. Higher efSearch values lead to more accurate but slower searches. efSearch cannot be set lower than the number of queried nearest neighbors k and can be any value between k and the size of the dataset.
 
-## Construction Parameters
-### M
+### Construction Parameters
+#### M
 M is the number of bi-directional links created for every new element during index construction. A reasonable range for M is 2-100. Higher M values work better on datasets with high intrinsic dimensionality and/or high recall, while lower M values work better for datasets with low intrinsic dimensionality and/or low recall. The parameter also determines the algorithms memory consumption, which is roughly M * 8-10 bytes per stored element.
 
-### efConstruction
+#### efConstruction
 efConstruction controls the index construction time and accuracy. Bigger efConstruction values lead to longer construction times but better index quality. At some point, increasing efConstruction does not improve the quality of the index. To check if the selected efConstruction value is appropriate, measure recall for M nearest neighbor search when efSearch = efConstruction. If the recall is lower than 0.9, there is room for improvement.
 
 ## Parameter Selection for hnswlib-wasm
