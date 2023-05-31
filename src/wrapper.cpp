@@ -267,7 +267,7 @@ namespace emscripten {
     uint32_t dim_;
     std::unique_ptr<hnswlib::InnerProductSpace> ipspace_;
 
-    InnerProductSpace(uint32_t dim): dim_(dim) {
+    InnerProductSpace(uint32_t dim) : dim_(dim) {
       ipspace_ = std::unique_ptr<hnswlib::InnerProductSpace>(new hnswlib::InnerProductSpace(static_cast<size_t>(dim_)));
     }
 
@@ -287,9 +287,9 @@ namespace emscripten {
 
 
   /*****************/
-  class CustomFilterFunctor: public hnswlib::BaseFilterFunctor {
+  class CustomFilterFunctor : public hnswlib::BaseFilterFunctor {
   public:
-    CustomFilterFunctor(emscripten::val callback): callback_(callback) {}
+    CustomFilterFunctor(emscripten::val callback) : callback_(callback) {}
 
     bool operator()(hnswlib::labeltype id) override {
       if (callback_.isUndefined() || callback_.isNull()) {
@@ -306,7 +306,7 @@ namespace emscripten {
     }
 
     // Explicitly declare the destructor with the same exception specification as the base class
-    ~CustomFilterFunctor() noexcept override = default;
+    ~CustomFilterFunctor() noexcept = default;
 
   private:
     emscripten::val callback_;
@@ -460,6 +460,7 @@ namespace emscripten {
       const size_t n_results = knn.size();
       emscripten::val distances = emscripten::val::array();
       emscripten::val neighbors = emscripten::val::array();
+
 
       // Reverse the loop order
       for (int32_t i = static_cast<int32_t>(n_results) - 1; i >= 0; i--) {

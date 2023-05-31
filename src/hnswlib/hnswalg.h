@@ -92,8 +92,8 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         size_t ef_construction = 200,
         size_t random_seed = 100,
         bool allow_replace_deleted = false)
-        : label_op_locks_(MAX_LABEL_OPERATION_LOCKS),
-            link_list_locks_(max_elements),
+        : link_list_locks_(max_elements),
+            label_op_locks_(MAX_LABEL_OPERATION_LOCKS),
             element_levels_(max_elements),
             allow_replace_deleted_(allow_replace_deleted) {
         max_elements_ = max_elements;
@@ -739,7 +739,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     std::vector<data_t> getDataByLabel(labeltype label) const {
         // lock all operations with element by label
         std::unique_lock <std::mutex> lock_label(getLabelOpMutex(label));
-
+        
         std::unique_lock <std::mutex> lock_table(label_lookup_lock);
         auto search = label_lookup_.find(label);
         if (search == label_lookup_.end() || isMarkedDeleted(search->second)) {
@@ -752,7 +752,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         size_t dim = *((size_t *) dist_func_param_);
         std::vector<data_t> data;
         data_t* data_ptr = (data_t*) data_ptrv;
-        for (size_t i = 0; i < dim; i++) {
+        for (int i = 0; i < dim; i++) {
             data.push_back(*data_ptr);
             data_ptr += 1;
         }
@@ -801,7 +801,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
     /*
     * Removes the deleted mark of the node, does NOT really change the current graph.
-    *
+    * 
     * Note: the method is not safe to use when replacement of deleted elements is enabled,
     *  because elements marked as deleted can be completely removed by addPoint
     */

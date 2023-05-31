@@ -6,6 +6,7 @@ import { expect } from 'vitest';
 
 describe('hnswlib.HierarchicalNSW', () => {
   afterAll(() => {
+    console.log(testHnswlibModule, (testHnswlibModule as any).FS);
     process.stdout.write('');
   });
 
