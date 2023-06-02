@@ -32,7 +32,29 @@ import { loadHnswlib } from 'hnswlib-wasm';
 const lib = await loadHnswlib();
 ```
 
-You can then create the index and use it:
+Here is a full example of loading a index if it exists or creating a new index if it doesn't exist:
+
+```ts
+  const filename = 'ghost.dat';
+  const { loadHnswlib } = await import('hnswlib-wasm');
+  this.hnswlib = await loadHnswlib();
+  this.hnswlib.EmscriptenFileSystemManager.setDebugLogs(true);
+  this.vectorHnswIndex = new this.hnswlib.HierarchicalNSW('cosine', 1536);
+  await syncFileSystem('read');
+
+  const exists = this.hnswlib.EmscriptenFileSystemManager.checkFileExists(filename);
+  if (!exists) {
+    this.vectorHnswIndex.initIndex(100000, 48, 128, 100, true);
+    this.vectorHnswIndex.setEfSearch(32);
+    this.vectorHnswIndex.writeIndex('ghost.dat');
+  } else {
+    this.vectorHnswIndex.readIndex(filename, 100000, true);
+    this.vectorHnswIndex.setEfSearch(32);
+  }
+```
+
+
+You can create the index and use it like so.
 
 ```ts
 // Here you're creating a new index with the L2 distance metric and 1000 as the max number of elements
@@ -56,6 +78,7 @@ const labelFilter = (label: number) => {
 }
 const result2 = index.searchKnn(testVectorData.vectors[10], 10, labelFilter);
 ```
+
 
 More usage examples to be added.
 
