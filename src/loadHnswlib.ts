@@ -1,11 +1,29 @@
 import './hnswlib.mjs';
 import { type HnswModuleFactory, HnswlibModule } from '.';
+import { read } from 'fs';
 
-let library: Awaited<ReturnType<HnswModuleFactory>>;
+let library: Awaited<HnswlibModule>;
 type InputFsType = 'IDBFS' | undefined;
 
-export const waitForFileSystemReady = (): Promise<void> => {
-  const EmscriptenFileSystemManager = library.EmscriptenFileSystemManager;
+export const syncFileSystem = (action: 'read' | 'write'): Promise<void> => {
+  const EmscriptenFileSystemManager: HnswlibModule['EmscriptenFileSystemManager'] = library.EmscriptenFileSystemManager;
+
+  const syncAction = action === 'read' ? true : action === 'write' ? false : undefined;
+  if (syncAction === undefined) throw new Error('Invalid action type');
+
+  return new Promise((resolve, reject) => {
+    try {
+      EmscriptenFileSystemManager.syncFS(syncAction, () => {
+        resolve();
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
+export const waitForFileSystemInitalized = (): Promise<void> => {
+  const EmscriptenFileSystemManager: HnswlibModule['EmscriptenFileSystemManager'] = library.EmscriptenFileSystemManager;
   return new Promise((resolve, reject) => {
     let totalWaitTime = 0;
     const checkInterval = 100; // Check every 100ms
@@ -13,6 +31,28 @@ export const waitForFileSystemReady = (): Promise<void> => {
 
     const checkInitialization = () => {
       if (EmscriptenFileSystemManager.isInitialized()) {
+        resolve();
+      } else if (totalWaitTime >= maxWaitTime) {
+        reject(new Error('Failed to initialize filesystem'));
+      } else {
+        totalWaitTime += checkInterval;
+        setTimeout(checkInitialization, checkInterval);
+      }
+    };
+
+    setTimeout(checkInitialization, checkInterval);
+  });
+};
+
+export const waitForFileSystemSynced = (): Promise<void> => {
+  const EmscriptenFileSystemManager = library.EmscriptenFileSystemManager;
+  return new Promise((resolve, reject) => {
+    let totalWaitTime = 0;
+    const checkInterval = 100; // Check every 100ms
+    const maxWaitTime = 4000; // Maximum wait time of 4 seconds
+
+    const checkInitialization = () => {
+      if (EmscriptenFileSystemManager.isSynced()) {
         resolve();
       } else if (totalWaitTime >= maxWaitTime) {
         reject(new Error('Failed to initialize filesystem'));
@@ -40,7 +80,7 @@ const initializeFileSystemAsync = async (inputFsType?: InputFsType): Promise<voi
     return;
   }
   EmscriptenFileSystemManager.initializeFileSystem(fsType);
-  return await waitForFileSystemReady();
+  return await waitForFileSystemInitalized();
 };
 
 /**
@@ -59,12 +99,10 @@ export const loadHnswlib = async (inputFsType?: InputFsType): Promise<HnswlibMod
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       const temp = await import('./hnswlib.mjs');
-      const factory = temp.default;
+      const factoryFunc = temp.default;
 
-      library = await factory();
-      // console.log('Library initialized');
+      library = await factoryFunc();
       await initializeFileSystemAsync(inputFsType);
-      console.log('IDBFS Filesystem initialized');
       return library; // Add this line
     }
     return library;

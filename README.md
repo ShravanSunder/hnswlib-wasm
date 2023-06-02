@@ -85,8 +85,8 @@ await index.readIndex('savedIndex', false);
 The `syncFs` method is used to synchronize the Emscripten file system with the persistent storage IDBFS. You can use this method to save or read data from the file system's persistent source.
 
 ```ts
-await lib.EmscriptenFileSystemManager.syncFs(true); // Read data from the persistent source
-await lib.EmscriptenFileSystemManager.syncFs(false); // Save data to the persistent source
+await lib.EmscriptenFileSystemManager.syncFS(true, emscripten::val::undefined()); // Read data from the persistent source
+await lib.EmscriptenFileSystemManager.syncFS(false, emscripten::val::undefined()); // Save data to the persistent source
 ```
 
 

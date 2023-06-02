@@ -6,6 +6,8 @@
 #include <emscripten/bind.h>
 #include <emscripten/val.h>
 #include <emscripten/em_asm.h>
+#include <exception>
+#include <cstdio>
 #include <cmath>
 #include <fstream>
 #include <memory>
@@ -29,137 +31,169 @@ namespace emscripten {
 
   /*****************/
 
+
+    // typedef void (*syncfs_callback)(int);
+      // void hnswlib_syncfs_internal(bool read, syncfs_callback callback) {
+    //   // printf("Syncing FS 2...\n");
+    //   // FILE* fp = fopen("/tmp/abcdefg.txt", "w");
+    //   // if (fp) {
+    //   //   fprintf(fp, "test\n");
+    //   //   fclose(fp);
+    //   // }
+    //   EM_ASM({
+    //     const read = $0;
+    //     const callback = $1;
+
+    //     FS.syncfs(read, function(err) {
+    //       if (err) {
+    //         console.error('Error syncing FS:', err);
+    //         dynCall('vi', callback,[-1]);
+    //       }
+    //     else {
+    //       console.log('FS synced successfully');
+    //       dynCall('vi', callback,[0]);
+    //       }
+    //     });
+    //     }, read, callback);
+    // }
+
+    // void hnswlib_syncfs(bool read) {
+    //   syncIdb_js(read);
+    //   // hnswlib_syncfs_internal(read, [](int result) {
+    //   //   // Handle result here, e.g., store it in a global variable.
+    //   //   });
+    // }
   extern "C" {
-    typedef void (*syncfs_callback)(int);
 
     EM_JS(void, syncIdb_js, (bool read), {
-      Module.setIdbfsInitialized(false);
-      FS.syncfs(read, function(err) {
-        if (err) {
-            console.error('Error syncing FS:', err);
-        }
-        else {
-          console.log('FS synced successfully');
-          Module.setIdbfsInitialized(true);
-        }
-      });
-      });
-
-
-    void hnswlib_syncfs_internal(bool read, syncfs_callback callback) {
-      // printf("Syncing FS 2...\n");
-      // FILE* fp = fopen("/tmp/abcdefg.txt", "w");
-      // if (fp) {
-      //   fprintf(fp, "test\n");
-      //   fclose(fp);
-      // }
-      EM_ASM({
-        const read = $0;
-        const callback = $1;
-
+      try {
         FS.syncfs(read, function(err) {
           if (err) {
             console.error('Error syncing FS:', err);
-            dynCall('vi', callback,[-1]);
+            Module.setIdbfsSynced(false);
           }
-        else {
-          console.log('FS synced successfully');
-          dynCall('vi', callback,[0]);
+          else {
+            console.log('FS synced successfully');
+            Module.setIdbfsSynced(true);
           }
         });
-        }, read, callback);
+      }
+      catch (err) {
+        Module.setIdbfsSynced(false);
+      }
+      });
+  }// extern c
+
+  class EmscriptenFileSystemManager {
+  private:
+    static std::mutex init_mutex_;
+    static std::mutex sync_mutex_;
+    static std::unique_lock<std::mutex> sync_lock_;
+    static emscripten::val syncCallback_;
+    static bool initialized_;
+    static bool synced_;
+  public:
+    static std::string virtualDirectory;
+    static bool debugLogs;
+
+    static void setDebugLogs(bool allow) {
+      debugLogs = allow;
     }
 
-    void hnswlib_syncfs(bool read) {
+    static bool checkFileExists(const std::string& path) {
+      if (debugLogs) printf("EmscriptenFileSystemManager: Checking if file exists: %s\n", path.c_str());
+      try {
+        if (debugLogs) printf("EmscriptenFileSystemManager: Checking if file exists1: %s\n", path.c_str());
+        std::string location = virtualDirectory + "/" + path;
+        if (debugLogs) printf("EmscriptenFileSystemManager: Checking if file exists2: %s\n", location.c_str());
+        bool result = std::filesystem::exists(location); // Declare 'result' variable here
+        if (debugLogs) printf("EmscriptenFileSystemManager: File exists: %d\n", result);
+        return result;
+      }
+      catch (...) {
+        if (debugLogs) printf("EmscriptenFileSystemManager: Error checking if file exists: %s\n", path.c_str());
+        return false;
+      }
+    }
+
+
+    static bool isInitialized() {
+      std::lock_guard<std::mutex> lock(init_mutex_);
+      return initialized_;
+    }
+
+    static bool isSynced() {
+      return synced_;
+    }
+    static void syncFS(bool read, emscripten::val callback) {
+      printf("Syncing FS...\n");
+      sync_lock_ = std::unique_lock<std::mutex>(sync_mutex_);
+      syncCallback_ = callback;
       syncIdb_js(read);
-      // hnswlib_syncfs_internal(read, [](int result) {
-      //   // Handle result here, e.g., store it in a global variable.
-      //   });
     }
 
-    /*****************/
-    // EmscriptenFileSystemManager
-    /*****************/
-
-    /// @brief This class is used to manage the filesystem in emscripten, including mounting the filesystem and syncing it
-    class EmscriptenFileSystemManager {
-    private:
-      static std::mutex init_mutex_;
-      static bool initialized_;
-    public:
-      static std::string virtualDirectory;
-      static bool debugLogs;
-
-      /// @brief This function is used to set the initialized flag
-      /// @param initialized 
-      static void setInitialized(bool initialized) {
-        initialized_ = initialized;
+    static void setIdbfsSynced(bool synced) {
+      printf("IDBFS synced: %d\n", synced);
+      synced_ = synced;
+      if (!syncCallback_.isUndefined()) {
+        printf("Calling sync callback...\n");
+        syncCallback_.call<void>("call", emscripten::val::undefined());
+        syncCallback_ = emscripten::val::undefined();
       }
-
-      /// @brief This function is used to set the debug flag
-      /// @param debugLogs 
-      static void setDebugLogs(bool debugLogs) {
-        debugLogs = debugLogs;
+      if (sync_lock_.owns_lock()) {
+        sync_lock_.unlock();
       }
+    }
 
-      /// @brief This function is used to initialize the filesystem
-      static void initializeFileSystem(const std::string& fsType) {
-        std::lock_guard<std::mutex> lock(init_mutex_);
+    static void initializeFileSystem(const std::string& fsType) {
+      std::lock_guard<std::mutex> lock(init_mutex_);
+      if (!initialized_) {
         virtualDirectory = "/hnswlib-index";
         const char* virtualDirCStr = virtualDirectory.c_str();
         const char* fsTypeCStr = fsType.c_str();
-
-        if (!initialized_) {
-          EM_ASM({
-            let type = UTF8ToString($0);
-            let directory = UTF8ToString($1);
-            let allocatedDir = _malloc(directory.length + 1);
-            stringToUTF8(directory, allocatedDir, directory.length + 1);
-            let jsAllocatedDir = UTF8ToString(allocatedDir);
-
-            if (type == "IDBFS") {
-              FS.mkdir(jsAllocatedDir);
-              FS.mount(IDBFS, {}, jsAllocatedDir);
-              console.log('EmscriptenFileSystemManager: Mounting IDBFS filesystem...');
-            }
-            else {
-               throw new Error('Unsupported filesystem type, IDBFS is supported: ' + type);
-            }
-            _free(allocatedDir);
-            }, fsTypeCStr, virtualDirCStr);
-          syncIdb_js(true);
-        }
+        EM_ASM({
+          let type = UTF8ToString($0);
+          let directory = UTF8ToString($1);
+          let allocatedDir = _malloc(directory.length + 1);
+          stringToUTF8(directory, allocatedDir, directory.length + 1);
+          let jsAllocatedDir = UTF8ToString(allocatedDir);
+          if (type == "IDBFS") {
+            FS.mkdir(jsAllocatedDir);
+            FS.mount(IDBFS, {}, jsAllocatedDir);
+            console.log('EmscriptenFileSystemManager: Mounting IDBFS filesystem...');
+          }
+          else {
+             throw new Error('Unsupported filesystem type, IDBFS is supported: ' + type);
+          }
+          _free(allocatedDir);
+          }, fsTypeCStr, virtualDirCStr);
+        initialized_ = true;
+        syncFS(true, emscripten::val::undefined());
       }
-
-      /// @brief This function is used to check if the filesystem is initialized
-      /// @return 
-      static bool isInitialized() {
-        std::lock_guard<std::mutex> lock(init_mutex_);
-        return initialized_;
-      }
-
-      /// @brief This function is used to sync the filesystem using FS.Sync and helper functions
-      static void syncFS(bool read) {
-        if (read) setInitialized(false);
-        syncIdb_js(read);
-      }
-    };
-
-    /// @brief This function is used to set the initialized flag
-    /// @param initialized 
-    void setIdbfsInitialized(bool initialized) {
-      EmscriptenFileSystemManager::setInitialized(initialized);
     }
-  } // extern
+  };
+
+
 
   /*****************/
   // Initialize static members
   /*****************/
 
   std::mutex EmscriptenFileSystemManager::init_mutex_;
+  std::mutex EmscriptenFileSystemManager::sync_mutex_;
+  std::unique_lock<std::mutex> EmscriptenFileSystemManager::sync_lock_;
+  emscripten::val EmscriptenFileSystemManager::syncCallback_;
   bool EmscriptenFileSystemManager::initialized_ = false;
   bool EmscriptenFileSystemManager::debugLogs = false;
+  bool EmscriptenFileSystemManager::synced_ = false;
   std::string EmscriptenFileSystemManager::virtualDirectory = "/hnswlib-index";
+
+  extern "C" {
+    void setIdbfsSynced(bool synced) {
+      EmscriptenFileSystemManager::setIdbfsSynced(synced);
+    }
+  }
+
 
   /*****************/
 
@@ -411,7 +445,7 @@ namespace emscripten {
       }
 
       index_->saveIndex(filename);
-      EmscriptenFileSystemManager::syncFS(false);
+      EmscriptenFileSystemManager::syncFS(false, emscripten::val::undefined());
     }
 
     void addPoint(const std::vector<float>& vec, uint32_t idx) {
@@ -599,7 +633,7 @@ namespace emscripten {
       }
       const std::string path = EmscriptenFileSystemManager::virtualDirectory + "/" + filename;
       index_->saveIndex(path);
-      EmscriptenFileSystemManager::syncFS(false);
+      EmscriptenFileSystemManager::syncFS(false, emscripten::val::undefined());
     }
 
     void resizeIndex(uint32_t new_max_elements) {
@@ -625,6 +659,36 @@ namespace emscripten {
       }
     }
 
+    void addPoint(const std::vector<float>& vec, uint32_t idx, bool replace_deleted = false) {
+      if (index_ == nullptr) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
+        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
+      }
+
+      if (vec.size() != dim_) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Invalid vector size. Must be equal to the dimension of the space. The dimension of the space is %d.\n", this->dim_);
+        throw std::invalid_argument("Invalid vector size. Must be equal to the dimension of the space. The dimension of the space is " + std::to_string(this->dim_) + ".");
+      }
+
+      std::vector<float>& mutableVec = const_cast<std::vector<float>&>(vec);
+
+      if (normalize_) {
+        internal::normalizePoints(mutableVec);
+      }
+
+      if (index_->cur_element_count == index_->max_elements_) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("The maximum number of elements has been reached in index, please increased the index max_size.  max_size: %zu\n", index_->max_elements_);
+        throw std::runtime_error("The maximum number of elements has been reached in index, please increased the index max_size.  max_size: " + std::to_string(index_->max_elements_));
+      }
+
+      try {
+        index_->addPoint(reinterpret_cast<void*>(mutableVec.data()), static_cast<hnswlib::labeltype>(idx), replace_deleted);
+      }
+      catch (const std::exception& e) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("HNSWLIB ERROR: %s\n", e.what());
+        throw std::runtime_error("HNSWLIB ERROR: " + std::string(e.what()));
+      }
+    }
 
     void addItems(const std::vector<std::vector<float>>& vec, const std::vector<uint32_t>& idVec, bool replace_deleted = false) {
       if (index_ == nullptr) {
@@ -919,13 +983,18 @@ namespace emscripten {
       .function("searchKnn", &HierarchicalNSW::searchKnn)
       ;
 
-    function("setIdbfsInitialized", &setIdbfsInitialized);
+    function("setIdbfsSynced", &setIdbfsSynced);
 
     emscripten::class_<EmscriptenFileSystemManager>("EmscriptenFileSystemManager")
       .constructor<>()
       .class_function("initializeFileSystem", &EmscriptenFileSystemManager::initializeFileSystem, emscripten::allow_raw_pointer<const char*>())
       .class_function("isInitialized", &EmscriptenFileSystemManager::isInitialized)
-      .class_function("syncFS", &EmscriptenFileSystemManager::syncFS);
+      .class_function("syncFS", &EmscriptenFileSystemManager::syncFS)
+      .class_function("setDebugLogs", &EmscriptenFileSystemManager::setDebugLogs)
+      .class_function("isSynced", &EmscriptenFileSystemManager::isSynced)
+      .class_function("checkFileExists", &EmscriptenFileSystemManager::checkFileExists);
+
+
   }
 
 }  // namespace emscripten

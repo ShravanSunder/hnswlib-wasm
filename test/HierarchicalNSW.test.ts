@@ -1,4 +1,10 @@
-import { addItemsWithPtrsHelper, defaultParams, HierarchicalNSW, hnswParamsForAda } from '~dist/hnswlib';
+import {
+  addItemsWithPtrsHelper,
+  defaultParams,
+  HierarchicalNSW,
+  hnswParamsForAda,
+  syncFileSystem,
+} from '~dist/hnswlib';
 import { createVectorData, generateMetadata, ItemMetadata, testErrors } from '~test/testHelpers';
 import 'fake-indexeddb/auto';
 import { indexedDB } from 'fake-indexeddb';
@@ -544,7 +550,7 @@ describe('hnswlib.HierarchicalNSW', () => {
       index = new testHnswlibModule.HierarchicalNSW('ip', 3);
     });
 
-    beforeEach(() => {
+    beforeEach(async () => {
       index.initIndex(3, ...defaultParams.initIndex);
       index.addPoint([1, 2, 3], 0, ...defaultParams.addPoint);
       index.addPoint([2, 3, 4], 1, ...defaultParams.addPoint);
@@ -553,11 +559,19 @@ describe('hnswlib.HierarchicalNSW', () => {
       index.writeIndex(filename);
     });
 
+    it('can read isSynced and it is true after syncing', async () => {
+      await syncFileSystem('read');
+      expect(await testHnswlibModule.EmscriptenFileSystemManager.isSynced()).toBeTruthy();
+    });
+
     it('can write a file and the idb database exists', async () => {
       const db = await indexedDB.open('/hnswlib-indexes');
-      //const files = await getIdbFileList(db);
-      //console.log('stfuff',files);
       expect(db).not.eql(null);
+    });
+
+    it('when calling checkFileExists it returns true', async () => {
+      const exists = await testHnswlibModule.EmscriptenFileSystemManager.checkFileExists(filename);
+      expect(exists).toBeTruthy();
     });
 
     it('can read the index back', async () => {
