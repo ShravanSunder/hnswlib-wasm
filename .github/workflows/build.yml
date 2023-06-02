@@ -34,6 +34,8 @@ jobs:
           ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
     - name: Install
       run: yarn install
+    - name: Build
+      run: yarn build  
     - name: Test
       run: yarn test
     - name: Bench
@@ -84,6 +86,8 @@ jobs:
           ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}    
     - name: Install
       run: yarn install
+    - name: Build
+      run: yarn build  
     - name: Test
       run: yarn test
     - name: Bench
