@@ -3,27 +3,38 @@ import { type HnswModuleFactory } from '.';
 import { HnswlibModule } from './';
 
 let library: Awaited<ReturnType<HnswModuleFactory>>;
-type InputFsType = 'NODEFS' | 'IDBFS' | undefined;
+type InputFsType = 'IDBFS' | undefined;
 
 const initializeFileSystemAsync = async (inputFsType?: InputFsType): Promise<void> => {
   const fsType = inputFsType == null ? 'IDBFS' : inputFsType;
   const EmscriptenFileSystemManager = library.EmscriptenFileSystemManager;
+
   return new Promise(function (resolve, reject) {
     if (EmscriptenFileSystemManager.isInitialized()) {
       resolve();
       return;
     }
     EmscriptenFileSystemManager.initializeFileSystem(fsType);
-    // Use setTimeout to allow Emscripten to perform the filesystem operations.
-    setTimeout(function () {
+
+    let totalWaitTime = 0;
+    const checkInterval = 100; // Check every 100ms
+    const maxWaitTime = 4000; // Maximum wait time of 4 seconds
+
+    const checkInitialization = () => {
       if (EmscriptenFileSystemManager.isInitialized()) {
         resolve();
-      } else {
+      } else if (totalWaitTime >= maxWaitTime) {
         reject(new Error('Failed to initialize filesystem'));
+      } else {
+        totalWaitTime += checkInterval;
+        setTimeout(checkInitialization, checkInterval);
       }
-    }, 0);
+    };
+
+    setTimeout(checkInitialization, checkInterval);
   });
 };
+
 /**
  * Load the HNSW library in node or browser
  */

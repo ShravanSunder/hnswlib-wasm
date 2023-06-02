@@ -103,6 +103,20 @@ namespace emscripten {
   extern "C" {
     typedef void (*syncfs_callback)(int);
 
+    EM_JS(void, syncIdb_js, (bool read), {
+      Module.setIdbfsInitialized(false);
+      FS.syncfs(read, function(err) {
+        if (err) {
+            console.error('Error syncing FS:', err);
+        }
+        else {
+          console.log('FS synced successfully');
+          Module.setIdbfsInitialized(true);
+        }
+      });
+      });
+
+
     void hnswlib_syncfs_internal(bool read, syncfs_callback callback) {
       // printf("Syncing FS 2...\n");
       // FILE* fp = fopen("/tmp/abcdefg.txt", "w");
@@ -128,16 +142,20 @@ namespace emscripten {
     }
 
     void hnswlib_syncfs(bool read) {
-      hnswlib_syncfs_internal(read, [](int result) {
-        // Handle result here, e.g., store it in a global variable.
-
-        });
+      syncIdb_js(read);
+      // hnswlib_syncfs_internal(read, [](int result) {
+      //   // Handle result here, e.g., store it in a global variable.
+      //   });
     }
 
     /*****************/
     class EmscriptenFileSystemManager {
     public:
       static std::string virtualDirectory;
+
+      static void setInitialized(bool initialized) {
+        initialized_ = initialized;
+      }
 
       static void initializeFileSystem(const std::string& fsType) {
         std::lock_guard<std::mutex> lock(init_mutex_);
@@ -158,57 +176,13 @@ namespace emscripten {
               FS.mount(IDBFS, {}, jsAllocatedDir);
               console.log('EmscriptenFileSystemManager: Mounting IDBFS filesystem...');
             }
-            // // FUTURE SUPPORT FOR NODEFS
-            // if (type == "NODEFS") {
-            //   console.log('wrapper', 'NODEFS');
-            //   if (!FS.analyzePath(jsAllocatedDir).exists) {
-            //     console.log('wrapper', 'NODEFS2');
-            //     FS.mkdir(jsAllocatedDir);
-            //   }
-            //   console.log('wrapper', 'NODEFS3');
-            //   FS.mount(NODEFS, { root: './tmp' }, jsAllocatedDir);
-            //   console.log('EmscriptenFileSystemManager: Mounting NODEFS   filesystem...');
-            // }
-            // else if (type == "WORKERFS") {
-            //   FS.mkdir(jsAllocatedDir);
-            //   FS.mount(WORKERFS, { hnswlibBlobs }, jsAllocatedDir);
-            // }
             else {
-               throw new Error('Unsupported filesystem type, only NODEFS, IDBFS: ' + type);
+               throw new Error('Unsupported filesystem type, IDBFS is supported: ' + type);
             }
-
-            // // PRINT STATEMENT FOR DEBUGGING
-            // var fs = require('fs');
-            // fs.writeFileSync('./tmp/foobar.txt', 'yeehaw',{encoding:'utf8',flag : 'w'});
-
-            FS.syncfs(true, function(err) {
-              // Error
-              if (err) {
-                console.error('EmscriptenFileSystemManager: Error syncing FS:', err);
-                throw new Error('EmscriptenFileSystemManager: Error syncing FS: ' + err);
-              }
-              // else {
-              //   console.log('EmscriptenFileSystemManager: FS synced successfully');
-              // }
-            });
             _free(allocatedDir);
             }, fsTypeCStr, virtualDirCStr);
-
-          initialized_ = true;
-
-          // // PRINT STATEMENT FOR DBUGGING
-          // printf("Syncing FS 1...\n");
-          // FILE* fp = fopen("/hnswlib/abcdefg.txt", "w");
-          // if (fp) {
-          //   fprintf(fp, "test\n");
-          //   fclose(fp);
-          // }
+          syncIdb_js(true);
         }
-      }
-
-      static void syncFs(bool read, emscripten::val js_callback) {
-        hnswlib_syncfs(read);
-        js_callback.call<void>("call", emscripten::val::undefined());
       }
 
       static bool isInitialized() {
@@ -216,20 +190,27 @@ namespace emscripten {
         return initialized_;
       }
 
+      static void syncFS(bool read) {
+        if (read) setInitialized(false);
+        hnswlib_syncfs(read);
+      }
+
     private:
       static std::mutex init_mutex_;
       static bool initialized_;
     };
 
-
-  }
-
-
+    void setIdbfsInitialized(bool initialized) {
+      EmscriptenFileSystemManager::setInitialized(initialized);
+    }
+  } // extern
 
   // Initialize static members
   std::mutex EmscriptenFileSystemManager::init_mutex_;
   bool EmscriptenFileSystemManager::initialized_ = false;
   std::string EmscriptenFileSystemManager::virtualDirectory = "/hnswlib-index";
+
+
 
 
   /*****************/
@@ -372,7 +353,8 @@ namespace emscripten {
         std::string target = "The maximum number of elements has been reached";
 
         if (errorMessage.find(target) != std::string::npos) {
-          printf("The maximum number of elements in the index has been reached. , please increased the index max_size.  max_size: %d\n", index_->maxelements_);
+          printf("The maximum number of elements in the index has been reached. , please increased the index max_size.  max_size: %zu\n", index_->maxelements_);
+
           throw std::runtime_error("The maximum number of elements in the index has been reached. , please increased the index max_size.  max_size: " + std::to_string(index_->maxelements_));
         }
         else {
@@ -848,24 +830,6 @@ namespace emscripten {
     }
   };
 
-  // Define a JavaScript function using EM_JS
-  EM_JS(void, syncIdb_js, (bool read, val callback), {
-      FS.syncfs(read, function(err) {
-          if (err) {
-              console.error('Error syncing FS:', err);
-              callback(-1);
-          }
-   else {
-    console.log('FS synced successfully');
-    callback(0);
-}
-});
-    });
-
-  // Create a C++ function that calls the JavaScript function
-  void syncIdb(bool read, val callback) {
-    syncIdb_js(read, callback);
-  }
 
 
   /*****************/
@@ -928,13 +892,13 @@ namespace emscripten {
       ;
 
     function("syncFs", &hnswlib_syncfs);
-    function("syncIdb", &syncIdb);
+    function("setIdbfsInitialized", &setIdbfsInitialized);
 
     emscripten::class_<EmscriptenFileSystemManager>("EmscriptenFileSystemManager")
       .constructor<>()
       .class_function("initializeFileSystem", &EmscriptenFileSystemManager::initializeFileSystem, emscripten::allow_raw_pointer<const char*>())
       .class_function("isInitialized", &EmscriptenFileSystemManager::isInitialized)
-      .class_function("syncFs", &EmscriptenFileSystemManager::syncFs);
+      .class_function("syncFS", &EmscriptenFileSystemManager::syncFS);
   }
 
 }  // namespace emscripten

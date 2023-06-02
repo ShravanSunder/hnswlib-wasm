@@ -7,7 +7,6 @@ export type L2Space = module.L2Space;
 export type InnerProductSpace = module.InnerProductSpace;
 
 export type HnswModuleFactory = typeof factory;
-export type syncFs = HnswlibModule['syncFs'];
 export type normalizePoint = HnswlibModule['normalizePoint'];
 export const IDBFS_STORE_NAME = 'FILE_DATA';
 
@@ -16,12 +15,6 @@ export * from './constants';
 
 export interface HnswlibModule extends Omit<EmscriptenModule, '_malloc' | '_free'> {
   normalizePoint(vec: number[]): number[];
-  /**
-   * Syncs the Emscripten file system with the persistent storage IDBFS.
-   * @param read read (bool) – true to initialize Emscripten’s file system data with the data from the file system’s persistent source, and false to save Emscripten`s file system data to the file system’s persistent source.
-   * @returns
-   */
-  syncFs: (read: boolean) => Promise<boolean>;
   L2Space: typeof module.L2Space;
   InnerProductSpace: typeof module.InnerProductSpace;
   BruteforceSearch: typeof module.BruteforceSearch;
