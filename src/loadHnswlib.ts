@@ -1,21 +1,12 @@
 import './hnswlib.mjs';
-import { type HnswModuleFactory } from '.';
-import { HnswlibModule } from './';
+import { type HnswModuleFactory, HnswlibModule } from '.';
 
 let library: Awaited<ReturnType<HnswModuleFactory>>;
 type InputFsType = 'IDBFS' | undefined;
 
-const initializeFileSystemAsync = async (inputFsType?: InputFsType): Promise<void> => {
-  const fsType = inputFsType == null ? 'IDBFS' : inputFsType;
+export const waitForFileSystemReady = (): Promise<void> => {
   const EmscriptenFileSystemManager = library.EmscriptenFileSystemManager;
-
-  return new Promise(function (resolve, reject) {
-    if (EmscriptenFileSystemManager.isInitialized()) {
-      resolve();
-      return;
-    }
-    EmscriptenFileSystemManager.initializeFileSystem(fsType);
-
+  return new Promise((resolve, reject) => {
     let totalWaitTime = 0;
     const checkInterval = 100; // Check every 100ms
     const maxWaitTime = 4000; // Maximum wait time of 4 seconds
@@ -33,6 +24,23 @@ const initializeFileSystemAsync = async (inputFsType?: InputFsType): Promise<voi
 
     setTimeout(checkInitialization, checkInterval);
   });
+};
+
+/**
+ * Initializes the file system for the HNSW library using the specified file system type.
+ * If no file system type is specified, IDBFS is used by default.
+ * @param inputFsType The type of file system to use. Can be 'IDBFS' or undefined.
+ * @returns A promise that resolves when the file system is initialized, or rejects if initialization fails.
+ */
+const initializeFileSystemAsync = async (inputFsType?: InputFsType): Promise<void> => {
+  const fsType = inputFsType == null ? 'IDBFS' : inputFsType;
+  const EmscriptenFileSystemManager = library.EmscriptenFileSystemManager;
+
+  if (EmscriptenFileSystemManager.isInitialized()) {
+    return;
+  }
+  EmscriptenFileSystemManager.initializeFileSystem(fsType);
+  return await waitForFileSystemReady();
 };
 
 /**

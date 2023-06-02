@@ -26,77 +26,6 @@
 
 
 namespace emscripten {
-  namespace internal {
-
-    template <typename T, typename Allocator>
-    struct BindingType<std::vector<T, Allocator>> {
-      using ValBinding = BindingType<val>;
-      using WireType = ValBinding::WireType;
-
-      static WireType toWireType(const std::vector<T, Allocator>& vec) {
-        return ValBinding::toWireType(val::array(vec));
-      }
-
-      static std::vector<T, Allocator> fromWireType(WireType value) {
-        return vecFromJSArray<T>(ValBinding::fromWireType(value));
-      }
-    };
-
-    template <typename T>
-    struct TypeID<T,
-      typename std::enable_if_t<std::is_same<
-      typename Canonicalized<T>::type,
-      std::vector<typename Canonicalized<T>::type::value_type,
-      typename Canonicalized<T>::type::allocator_type>>::value>> {
-      static constexpr TYPEID get() { return TypeID<val>::get(); }
-    };
-
-    /// @brief This function normalizes the point in place, but cheats and uses the same input parameter vector.  It is set as const due to bindings
-    /// @param vec 
-    void normalizePoints(const std::vector<float>& vec) {
-      try {
-        std::vector<float>& result = const_cast<std::vector<float>&>(vec);
-        const size_t dim = result.size();
-        const float norm = std::sqrt(std::fabs(std::inner_product(result.begin(), result.end(), result.begin(), 0.0f)));
-        if (norm > 0.0f) {
-          for (size_t i = 0; i < dim; i++) result[i] /= norm;
-        }
-      }
-      catch (const std::exception& e) {
-        throw std::runtime_error("Failed to normalize the point, check vector dimensions: " + std::string(e.what()));
-      }
-    }
-
-    void normalizePointsPtrs(float* vec, size_t dim) {
-      float sum = 0;
-      for (size_t i = 0; i < dim; ++i) {
-        sum += vec[i] * vec[i];
-      }
-      float norm = sqrt(sum);
-      for (size_t i = 0; i < dim; ++i) {
-        vec[i] /= norm;
-      }
-    }
-
-
-  }  // namespace internal
-
-  /*****************/
-
-  std::vector<float> normalizePointsPure(const std::vector<float>& vec) {
-    try {
-      std::vector<float> result(vec);
-      const size_t dim = result.size();
-      const float norm = std::sqrt(std::fabs(std::inner_product(result.begin(), result.end(), result.begin(), 0.0f)));
-      if (norm > 0.0f) {
-        for (size_t i = 0; i < dim; i++) result[i] /= norm;
-      }
-      return result;
-    }
-    catch (const std::exception& e) {
-      throw std::runtime_error("Failed to normalize the point, check vector dimensions: " + std::string(e.what()));
-    }
-  }
 
   /*****************/
 
@@ -149,14 +78,31 @@ namespace emscripten {
     }
 
     /*****************/
+    // EmscriptenFileSystemManager
+    /*****************/
+
+    /// @brief This class is used to manage the filesystem in emscripten, including mounting the filesystem and syncing it
     class EmscriptenFileSystemManager {
+    private:
+      static std::mutex init_mutex_;
+      static bool initialized_;
     public:
       static std::string virtualDirectory;
+      static bool debugLogs;
 
+      /// @brief This function is used to set the initialized flag
+      /// @param initialized 
       static void setInitialized(bool initialized) {
         initialized_ = initialized;
       }
 
+      /// @brief This function is used to set the debug flag
+      /// @param debugLogs 
+      static void setDebugLogs(bool debugLogs) {
+        debugLogs = debugLogs;
+      }
+
+      /// @brief This function is used to initialize the filesystem
       static void initializeFileSystem(const std::string& fsType) {
         std::lock_guard<std::mutex> lock(init_mutex_);
         virtualDirectory = "/hnswlib-index";
@@ -185,33 +131,113 @@ namespace emscripten {
         }
       }
 
+      /// @brief This function is used to check if the filesystem is initialized
+      /// @return 
       static bool isInitialized() {
         std::lock_guard<std::mutex> lock(init_mutex_);
         return initialized_;
       }
 
+      /// @brief This function is used to sync the filesystem using FS.Sync and helper functions
       static void syncFS(bool read) {
         if (read) setInitialized(false);
-        hnswlib_syncfs(read);
+        syncIdb_js(read);
       }
-
-    private:
-      static std::mutex init_mutex_;
-      static bool initialized_;
     };
 
+    /// @brief This function is used to set the initialized flag
+    /// @param initialized 
     void setIdbfsInitialized(bool initialized) {
       EmscriptenFileSystemManager::setInitialized(initialized);
     }
   } // extern
 
+  /*****************/
   // Initialize static members
+  /*****************/
+
   std::mutex EmscriptenFileSystemManager::init_mutex_;
   bool EmscriptenFileSystemManager::initialized_ = false;
+  bool EmscriptenFileSystemManager::debugLogs = false;
   std::string EmscriptenFileSystemManager::virtualDirectory = "/hnswlib-index";
 
+  /*****************/
+
+  namespace internal {
+
+    template <typename T, typename Allocator>
+
+    /// @brief This is a specialization of the BindingType struct for the std::vector class template with template parameters T and Allocator. It provides a WireType type alias and two static member functions toWireType and fromWireType that convert a std::vector<T, Allocator> object to and from its corresponding WireType representation.
+    struct BindingType<std::vector<T, Allocator>> {
+      using ValBinding = BindingType<val>;
+      using WireType = ValBinding::WireType;
+
+      static WireType toWireType(const std::vector<T, Allocator>& vec) {
+        return ValBinding::toWireType(val::array(vec));
+      }
+
+      static std::vector<T, Allocator> fromWireType(WireType value) {
+        return vecFromJSArray<T>(ValBinding::fromWireType(value));
+      }
+    };
+
+    template <typename T>
+    struct TypeID<T,
+      typename std::enable_if_t<std::is_same<
+      typename Canonicalized<T>::type,
+      std::vector<typename Canonicalized<T>::type::value_type,
+      typename Canonicalized<T>::type::allocator_type>>::value>> {
+      static constexpr TYPEID get() { return TypeID<val>::get(); }
+    };
+
+    /// @brief This function normalizes the point in place, but cheats and uses the same input parameter vector.  It is set as const due to bindings
+    /// @param vec 
+    void normalizePoints(const std::vector<float>& vec) {
+      try {
+        std::vector<float>& result = const_cast<std::vector<float>&>(vec);
+        const size_t dim = result.size();
+        const float norm = std::sqrt(std::fabs(std::inner_product(result.begin(), result.end(), result.begin(), 0.0f)));
+        if (norm > 0.0f) {
+          for (size_t i = 0; i < dim; i++) result[i] /= norm;
+        }
+      }
+      catch (const std::exception& e) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Failed to normalize the point, check vector dimensions: %s\n", e.what());
+        throw std::runtime_error("Failed to normalize the point, check vector dimensions: " + std::string(e.what()));
+      }
+    }
+
+    void normalizePointsPtrs(float* vec, size_t dim) {
+      float sum = 0;
+      for (size_t i = 0; i < dim; ++i) {
+        sum += vec[i] * vec[i];
+      }
+      float norm = sqrt(sum);
+      for (size_t i = 0; i < dim; ++i) {
+        vec[i] /= norm;
+      }
+    }
 
 
+  }  // namespace internal
+
+  /*****************/
+
+  std::vector<float> normalizePointsPure(const std::vector<float>& vec) {
+    try {
+      std::vector<float> result(vec);
+      const size_t dim = result.size();
+      const float norm = std::sqrt(std::fabs(std::inner_product(result.begin(), result.end(), result.begin(), 0.0f)));
+      if (norm > 0.0f) {
+        for (size_t i = 0; i < dim; i++) result[i] /= norm;
+      }
+      return result;
+    }
+    catch (const std::exception& e) {
+      if (EmscriptenFileSystemManager::debugLogs) printf("Failed to normalize the point, check vector dimensions: %s\n", e.what());
+      throw std::runtime_error("Failed to normalize the point, check vector dimensions: " + std::string(e.what()));
+    }
+  }
 
   /*****************/
   class L2Space {
@@ -221,6 +247,7 @@ namespace emscripten {
 
     L2Space(uint32_t dim) {
       if (!dim) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Invalid the first argument type, must be a number.\n");
         throw std::invalid_argument("Invalid the first argument type, must be a number.");
       }
 
@@ -231,6 +258,7 @@ namespace emscripten {
 
     float distance(const std::vector<float>& vec_a, const std::vector<float>& vec_b) {
       if (vec_a.size() != dim_ || vec_b.size() != dim_) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Invalid vector size. Must be equal to the dimension of the space. The dimension of the space is %d.\n", dim_);
         throw std::invalid_argument("Invalid vector size. Must be equal to the dimension of the space. The dimension of the space is " + std::to_string(this->dim_) + ".");
       }
       hnswlib::DISTFUNC<float> df = l2space_->get_dist_func();
@@ -255,7 +283,8 @@ namespace emscripten {
     float distance(const std::vector<float>& vec_a, const std::vector<float>& vec_b) {
 
       if (vec_a.size() != dim_ || vec_b.size() != dim_) {
-        throw std::invalid_argument("Invalid vector size. Must be equal to the dimension of the space. The dimension of the space is " + std::to_string(this->dim_) + ".");
+        if (EmscriptenFileSystemManager::debugLogs) printf("Invalid vector size. Must be equal to the dimension of the space. The dimension of the space is %d.\n", dim_);
+        throw std::invalid_argument("Invalid vector size. Must be equal to the dimension of the space. The dimension of the space is " + std::to_string(this->dim_));
       }
 
       hnswlib::DISTFUNC<float> df = ipspace_->get_dist_func();
@@ -274,6 +303,7 @@ namespace emscripten {
 
     bool operator()(hnswlib::labeltype id) override {
       if (callback_.isUndefined() || callback_.isNull()) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Invalid callback function for CustomFilterFunctor.\n");
         throw std::invalid_argument("Invalid callback function for CustomFilterFunctor.");
       }
 
@@ -282,6 +312,7 @@ namespace emscripten {
         return result;
       }
       catch (const std::exception& e) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Failed to call the callback function: %s\n", e.what());
         throw std::invalid_argument("Failed to call the callback function: " + std::string(e.what()));
       }
     }
@@ -318,6 +349,7 @@ namespace emscripten {
         normalize_ = true;
       }
       else {
+        if (EmscriptenFileSystemManager::debugLogs) printf("invalid space should be expected l2, ip, or cosine, name: %s\n", space_name.c_str());
         throw std::invalid_argument("invalid space should be expected l2, ip, or cosine, name: " + space_name);
       }
     }
@@ -379,8 +411,7 @@ namespace emscripten {
       }
 
       index_->saveIndex(filename);
-      hnswlib_syncfs(false);
-
+      EmscriptenFileSystemManager::syncFS(false);
     }
 
     void addPoint(const std::vector<float>& vec, uint32_t idx) {
@@ -513,6 +544,7 @@ namespace emscripten {
         normalize_ = true;
       }
       else {
+        if (EmscriptenFileSystemManager::debugLogs) printf("invalid space should be expected l2, ip, or cosine, name: %s\n", space_name.c_str());
         throw std::invalid_argument("invalid space should be expected l2, ip, or cosine, name: " + space_name);
       }
     }
@@ -567,7 +599,7 @@ namespace emscripten {
       }
       const std::string path = EmscriptenFileSystemManager::virtualDirectory + "/" + filename;
       index_->saveIndex(path);
-      hnswlib_syncfs(false);
+      EmscriptenFileSystemManager::syncFS(false);
     }
 
     void resizeIndex(uint32_t new_max_elements) {
@@ -593,53 +625,32 @@ namespace emscripten {
       }
     }
 
-    void addPoint(const std::vector<float>& vec, uint32_t idx, bool replace_deleted = false) {
-      if (index_ == nullptr) {
-        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
-      }
-
-      if (vec.size() != dim_) {
-        throw std::invalid_argument("Invalid vector size. Must be equal to the dimension of the space. The dimension of the space is " + std::to_string(this->dim_) + ".");
-      }
-
-      std::vector<float>& mutableVec = const_cast<std::vector<float>&>(vec);
-
-      if (normalize_) {
-        internal::normalizePoints(mutableVec);
-      }
-
-      if (index_->cur_element_count == index_->max_elements_) {
-        throw std::runtime_error("The maximum number of elements has been reached in index, please increased the index max_size.  max_size: " + std::to_string(index_->max_elements_));
-      }
-
-      try {
-        index_->addPoint(reinterpret_cast<void*>(mutableVec.data()), static_cast<hnswlib::labeltype>(idx), replace_deleted);
-      }
-      catch (const std::exception& e) {
-        throw std::runtime_error("HNSWLIB ERROR: " + std::string(e.what()));
-      }
-    }
 
     void addItems(const std::vector<std::vector<float>>& vec, const std::vector<uint32_t>& idVec, bool replace_deleted = false) {
       if (index_ == nullptr) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
 
       if (vec.size() != idVec.size()) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("The number of vectors and ids must be the same.\n");
         throw std::runtime_error("The number of vectors and ids must be the same.");
       }
 
       if (vec.size() <= 0) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("The number of vectors and ids must be greater than 0.\n");
         throw std::runtime_error("The number of vectors and ids must be greater than 0.");
       }
 
       if (index_->cur_element_count + idVec.size() > index_->max_elements_) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("The maximum number of elements has been reached in index, please increased the index max_size.  max_size: %zu\n", index_->max_elements_);
         throw std::runtime_error("The maximum number of elements has been reached in index, please increased the index max_size.  max_size: " + std::to_string(index_->max_elements_));
       }
 
       try {
         for (size_t i = 0; i < vec.size(); ++i) {
           if (vec[i].size() != dim_) {
+            if (EmscriptenFileSystemManager::debugLogs) printf("Invalid vector size at index %zu. Must be equal to the dimension of the space. The dimension of the space is %d.\n", i, dim_);
             throw std::invalid_argument("Invalid vector size at index " + std::to_string(i) + ". Must be equal to the dimension of the space. The dimension of the space is " + std::to_string(this->dim_) + ".");
           }
 
@@ -659,18 +670,22 @@ namespace emscripten {
 
     void addItemsWithPtr(emscripten::val vecData, uint32_t vecSize, emscripten::val idVecData, uint32_t idVecSize, bool replace_deleted = false) {
       if (index_ == nullptr) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
 
       if ((vecSize / dim_) != idVecSize) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("The number of vectors and ids must be the same.\n");
         throw std::runtime_error("The number of vectors and ids must be the same.");
       }
 
       if (vecSize <= 0) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("The number of vectors and ids must be greater than 0.\n");
         throw std::runtime_error("The number of vectors and ids must be greater than 0.");
       }
 
       if (index_->cur_element_count + idVecSize > index_->max_elements_) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("The maximum number of elements has been reached in index, please increase the index max_size.  max_size: %zu\n", index_->max_elements_);
         throw std::runtime_error("The maximum number of elements has been reached in index, please increase the index max_size.  max_size: " + std::to_string(index_->max_elements_));
       }
 
@@ -692,6 +707,7 @@ namespace emscripten {
         }
       }
       catch (const std::exception& e) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Could not addItems %s\n", e.what());
         throw std::runtime_error("Could not addItems " + std::string(e.what()));
       }
     }
@@ -700,6 +716,7 @@ namespace emscripten {
 
     int getMaxElements() {
       if (index_ == nullptr) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
 
@@ -717,6 +734,7 @@ namespace emscripten {
 
     void markDelete(uint32_t idx) {
       if (index_ == nullptr) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
 
@@ -726,6 +744,7 @@ namespace emscripten {
 
     void markDeleteItems(const std::vector<uint32_t>& labelsVec) {
       if (index_ == nullptr) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
 
@@ -735,6 +754,7 @@ namespace emscripten {
         }
       }
       catch (const std::exception& e) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Could not markDeleteItems %s\n", e.what());
         throw std::runtime_error("Could not markDeleteItems " + std::string(e.what()));
       }
     }
@@ -742,6 +762,7 @@ namespace emscripten {
 
     void unmarkDelete(uint32_t idx) {
       if (index_ == nullptr) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
 
@@ -750,19 +771,23 @@ namespace emscripten {
 
     emscripten::val searchKnn(const std::vector<float>& vec, uint32_t k, emscripten::val js_filterFn = emscripten::val::undefined()) {
       if (index_ == nullptr) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
 
       if (vec.size() != dim_) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Invalid the given array length (expected %lu, but got %zu).\n", static_cast<unsigned long>(dim_), vec.size());
         throw std::invalid_argument("Invalid the given array length (expected " + std::to_string(dim_) + ", but got " +
           std::to_string(vec.size()) + ").");
       }
 
       if (k > index_->max_elements_) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Invalid the number of k-nearest neighbors (cannot be given a value greater than `maxElements`: %zu).\n", index_->max_elements_);
         throw std::invalid_argument("Invalid the number of k-nearest neighbors (cannot be given a value greater than `maxElements`: " +
           std::to_string(index_->max_elements_) + ").");
       }
       if (k <= 0) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Invalid the number of k-nearest neighbors (must be a positive number).\n");
         throw std::invalid_argument("Invalid the number of k-nearest neighbors (must be a positive number).");
       }
 
@@ -802,6 +827,7 @@ namespace emscripten {
 
     uint32_t getCurrentCount() const {
       if (index_ == nullptr) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
 
@@ -814,6 +840,7 @@ namespace emscripten {
 
     uint32_t getEfSearch() const {
       if (index_ == nullptr) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
       return index_ == nullptr ? 0 : index_->ef_;
@@ -821,6 +848,7 @@ namespace emscripten {
 
     void setEfSearch(uint32_t ef) {
       if (index_ == nullptr) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
 
@@ -891,7 +919,6 @@ namespace emscripten {
       .function("searchKnn", &HierarchicalNSW::searchKnn)
       ;
 
-    function("syncFs", &hnswlib_syncfs);
     function("setIdbfsInitialized", &setIdbfsInitialized);
 
     emscripten::class_<EmscriptenFileSystemManager>("EmscriptenFileSystemManager")
