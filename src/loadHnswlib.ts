@@ -45,6 +45,7 @@ export const loadHnswlib = async (inputFsType?: InputFsType): Promise<HnswlibMod
       library = await factory();
       // console.log('Library initialized');
       await initializeFileSystemAsync(inputFsType);
+      console.log('IDBFS Filesystem initialized');
       return library; // Add this line
     }
     return library;

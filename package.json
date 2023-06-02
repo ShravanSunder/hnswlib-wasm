@@ -1,6 +1,6 @@
 {
   "name": "hnswlib-wasm",
-  "version": "0.1.0-0",
+  "version": "0.1.1-7",
   "description": "typescript and wasm bindings for Hnswlib",
   "module": "./dist/hnswlib.js",
   "types": "./dist/hnswlib.d.ts",
@@ -24,7 +24,7 @@
     "build:vite": "yarn vite build",
     "build": "yarn build:emcc && yarn build:vite",
     "test": "vitest",
-    "publish:pre": "npm version prerelease --git-tag-version false && npm publish --tag next",
+    "publish:pre": "npm version prerelease --git-tag-version false && npm publish --tag latest",
     "publish:next": "npm version prerelease --git-tag-version false && npm publish --tag next",
     "publish:latest": "npm version minor --git-tag-version false && npm publish --tag latest"
   },

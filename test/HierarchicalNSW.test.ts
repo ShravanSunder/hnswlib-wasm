@@ -3,10 +3,10 @@ import { createVectorData, generateMetadata, ItemMetadata, testErrors } from '~t
 import 'fake-indexeddb/auto';
 import { indexedDB } from 'fake-indexeddb';
 import { expect } from 'vitest';
+import console from 'console';
 
 describe('hnswlib.HierarchicalNSW', () => {
   afterAll(() => {
-    console.log(testHnswlibModule, (testHnswlibModule as any).FS);
     process.stdout.write('');
   });
 
@@ -173,13 +173,13 @@ describe('hnswlib.HierarchicalNSW', () => {
       it('throws an error if specified a non-existent datum point', () => {
         expect(() => {
           index.getPoint(3);
-        }).toThrow('Hnswlib Error: Label not found');
+        }).toThrow('HNSWLIB ERROR: Label not found');
         index.resizeIndex(4);
         index.addPoint([4, 5, 6], 3, ...defaultParams.addPoint);
         index.markDelete(3);
         expect(() => {
           index.getPoint(3);
-        }).toThrow('Hnswlib Error: Label not found');
+        }).toThrow('HNSWLIB ERROR: Label not found');
       });
 
       it('returns stored datum point', () => {
@@ -560,17 +560,32 @@ describe('hnswlib.HierarchicalNSW', () => {
       expect(db).not.eql(null);
     });
 
-    it('can write a file and read the index back', async () => {
+    it('can read the index back', async () => {
       index = new testHnswlibModule.HierarchicalNSW('ip', 3);
       expect(() => index.getPoint(1)).toThrow(testErrors.indexNotInitalized);
-      index.readIndex('testindex.dat', false);
+      index.readIndex(filename, 10, false);
       expect(index.getPoint(1)).toMatchObject([2, 3, 4]);
+    });
+  });
+
+  describe('#read index', () => {
+    const filename = 'testindex2.dat';
+
+    it('when calling readIndex directly, it should work', async () => {
+      const index = new testHnswlibModule.HierarchicalNSW('ip', 3);
+      expect(() => index.getPoint(1)).toThrow(testErrors.indexNotInitalized);
+      try {
+        const result = index.readIndex(filename, 10, false);
+      } catch (e) {
+        console.error(e);
+      }
+      expect(() => index.getPoint(1)).toThrow(testErrors.indexNotInitalized);
     });
   });
 
   describe('when a large block of data and dimensions is loaded', () => {
     const baseIndexSize = 1000;
-    const filename = 'testindex.dat';
+    const filename = 'testindex3.dat';
     const testVectorData = createVectorData(baseIndexSize - 1, hnswParamsForAda.dimensions);
     let index: HierarchicalNSW;
     beforeEach(async () => {

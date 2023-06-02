@@ -67,7 +67,7 @@
   index.markDelete(1);
 
   // HierarchicalNSW throws the error here since the number of data points has reached maxElements:
-  // Hnswlib Error: The number of elements exceeds the specified limit
+  // HNSWLIB ERROR: The number of elements exceeds the specified limit
   index.addPoint([6, 5, 4], 3, ...defaultParams.addPoint);
   ```
   ```javascript

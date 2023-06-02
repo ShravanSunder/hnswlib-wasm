@@ -372,12 +372,21 @@ namespace emscripten {
         std::string target = "The maximum number of elements has been reached";
 
         if (errorMessage.find(target) != std::string::npos) {
+          printf("The maximum number of elements in the index has been reached. , please increased the index max_size.  max_size: %d\n", index_->maxelements_);
           throw std::runtime_error("The maximum number of elements in the index has been reached. , please increased the index max_size.  max_size: " + std::to_string(index_->maxelements_));
         }
         else {
           // Re-throw the original error if it's not the one you're looking for
           throw;
         }
+      }
+      catch (const std::exception& e) {
+        printf("Failed to read the index: %s\n", e.what());
+        throw std::runtime_error("Failed to read the index: " + std::string(e.what()));
+      }
+      catch (...) {
+        printf("Failed to read the index.\n");
+        throw std::runtime_error("Failed to read the index.");
       }
 
     }
@@ -413,7 +422,7 @@ namespace emscripten {
         index_->addPoint(reinterpret_cast<void*>(mutableVec.data()), static_cast<hnswlib::labeltype>(idx));
       }
       catch (const std::exception& e) {
-        throw std::runtime_error("Hnswlib Error: " + std::string(e.what()));
+        throw std::runtime_error("HNSWLIB ERROR: " + std::string(e.what()));
       }
     }
 
@@ -547,13 +556,13 @@ namespace emscripten {
       index_ = new hnswlib::HierarchicalNSW<float>(space_, max_elements, m, ef_construction, random_seed, allow_replace_deleted);
     }
 
-    void readIndex(const std::string& filename, bool allow_replace_deleted = false) {
+    void readIndex(const std::string& filename, uint32_t max_elements, bool allow_replace_deleted = false) {
       if (index_) delete index_;
 
       const std::string path = EmscriptenFileSystemManager::virtualDirectory + "/" + filename;
 
       try {
-        index_ = new hnswlib::HierarchicalNSW<float>(space_, path, false, 0, allow_replace_deleted);
+        index_ = new hnswlib::HierarchicalNSW<float>(space_, path, false, max_elements, allow_replace_deleted);
       }
       catch (const std::runtime_error& e) {
         std::string errorMessage(e.what());
@@ -598,7 +607,7 @@ namespace emscripten {
         return point;
       }
       catch (const std::runtime_error& e) {
-        throw std::runtime_error("Hnswlib Error: " + std::string(e.what()));
+        throw std::runtime_error("HNSWLIB ERROR: " + std::string(e.what()));
       }
     }
 
@@ -625,7 +634,7 @@ namespace emscripten {
         index_->addPoint(reinterpret_cast<void*>(mutableVec.data()), static_cast<hnswlib::labeltype>(idx), replace_deleted);
       }
       catch (const std::exception& e) {
-        throw std::runtime_error("Hnswlib Error: " + std::string(e.what()));
+        throw std::runtime_error("HNSWLIB ERROR: " + std::string(e.what()));
       }
     }
 
@@ -839,6 +848,25 @@ namespace emscripten {
     }
   };
 
+  // Define a JavaScript function using EM_JS
+  EM_JS(void, syncIdb_js, (bool read, val callback), {
+      FS.syncfs(read, function(err) {
+          if (err) {
+              console.error('Error syncing FS:', err);
+              callback(-1);
+          }
+   else {
+    console.log('FS synced successfully');
+    callback(0);
+}
+});
+    });
+
+  // Create a C++ function that calls the JavaScript function
+  void syncIdb(bool read, val callback) {
+    syncIdb_js(read, callback);
+  }
+
 
   /*****************/
 
@@ -900,6 +928,7 @@ namespace emscripten {
       ;
 
     function("syncFs", &hnswlib_syncfs);
+    function("syncIdb", &syncIdb);
 
     emscripten::class_<EmscriptenFileSystemManager>("EmscriptenFileSystemManager")
       .constructor<>()

@@ -224,7 +224,7 @@ export class HierarchicalNSW {
    * @param {string} filename The filename to read from.
    * @param {boolean} allowReplaceDeleted The flag to replace deleted element when adding new element (default: false).
    */
-  readIndex(filename: string, allowReplaceDeleted: boolean): Promise<boolean>;
+  readIndex(filename: string, maxElements: number, allowReplaceDeleted: boolean): Promise<boolean>;
   /**
    * saves the search index.
    * @param {string} filename The filename to save to.
