@@ -18,6 +18,13 @@ export const testErrors = {
 
 export type testErrorTypes = keyof typeof testErrors;
 
+/**
+ * Creates an array of random vectors and their corresponding labels.  Labels are only used for addPoint or addPoints.  addItems will generate its own labels.
+ * @param numOfVec The number of vectors to create. Default is 100.
+ * @param dimensions The number of dimensions for each vector. Default is hnswParamsForAda.dimensions.
+ * @param start The starting label for the first vector. Default is 0.
+ * @returns An object containing the array of vectors and their corresponding labels.
+ */
 export const createVectorData = (numOfVec = 100, dimensions: number = hnswParamsForAda.dimensions, start = 0) => {
   const vectors: Float32Array[] = [];
   const labels: number[] = [];

@@ -27,8 +27,8 @@ async function setupBefore() {
     console.log('chunk', i);
     const chunkVectors = testVectorData.vectors.slice(i, i + chunkSize);
     const chunkLabels = testVectorData.labels.slice(i, i + chunkSize);
-    //index.addItems(chunkVectors, chunkLabels, ...defaultParams.addPoint);
-    addItemsWithPtrsHelper(testHnswlibModule, index, chunkVectors, chunkLabels, ...defaultParams.addPoint);
+    //index.addItems(chunkVectors, chunkLabels, false);
+    addItemsWithPtrsHelper(testHnswlibModule, index, chunkVectors, chunkLabels, false);
     await sleep(20);
   }
 

@@ -99,9 +99,9 @@ export class InnerProductSpace {
  * index = new BruteforceSearch('l2', numDimensions);
  * index.initIndex(maxElements);
  *
- * index.addPoint([0, 1, 2, 3, 4], 0, ...defaultParams.addPoint);
- * index.addPoint([1, 2, 3, 4, 5], 1, ...defaultParams.addPoint);
- * index.addPoint([3, 4, 5, 6, 6], 2, ...defaultParams.addPoint);
+ * index.addPoint([0, 1, 2, 3, 4], 0, false);
+ * index.addPoint([1, 2, 3, 4, 5], 1, false);
+ * index.addPoint([3, 4, 5, 6, 6], 2, false);
  *
  * const numNeighbors = 3;
  * const result = index.searchKnn([1, 4, 2, 3, 4], numNeighbors);
@@ -184,9 +184,9 @@ export class BruteforceSearch {
  * index = new HierarchicalNSW('l2', numDimensions);
  * index.initIndex(maxElements, 16, 200, 100);
  *
- * index.addPoint([0, 1, 2, 3, 4], 0, ...defaultParams.addPoint);
- * index.addPoint([1, 2, 3, 4, 5], 1, ...defaultParams.addPoint);
- * index.addPoint([3, 4, 5, 6, 6], 2, ...defaultParams.addPoint);
+ * index.addPoint([0, 1, 2, 3, 4], 0, false);
+ * index.addPoint([1, 2, 3, 4, 5], 1, false);
+ * index.addPoint([3, 4, 5, 6, 6], 2, false);
  *
  * const numNeighbors = 3;
  * const result = index.searchKnn([1, 4, 2, 3, 4], numNeighbors);
@@ -244,26 +244,33 @@ export class HierarchicalNSW {
   addPoint(point: Float32Array | number[], label: number, replaceDeleted: boolean): void;
 
   /**
-   * adds a datum point to the search index.
+   * adds a datum point array to the search index.
    * @param {Float32Array[] | number[][]} items The datum array to be added to the search index.
    * @param {number} labels The index array of the datum array to be added.
    * @param {boolean} replaceDeleted The flag to replace a deleted element (default: false).
    */
-  addItems(items: Float32Array[] | number[][], labels: number[], replaceDeleted: boolean): void;
+  addPoints(items: Float32Array[] | number[][], labels: number[], replaceDeleted: boolean): void;
 
   /**
-   * adds a datum point to the search index.
+   * Recommended approach to add items.  It will generate its own labels and has logic to reuse labels from deleted items.  It returns an ordered array of labels correspoinding to the items added.
    * @param {Float32Array[] | number[][]} items The datum array to be added to the search index.
-   * @param {number} labels The index array of the datum array to be added.
    * @param {boolean} replaceDeleted The flag to replace a deleted element (default: false).
    */
-  addItemsWithPtr(
-    vecData: Float32Array | number[],
-    vecSize: number,
-    idVecData: Uint32Array | number[],
-    idVecSize: number,
-    replaceDeleted?: boolean
-  ): void;
+  addItems(items: Float32Array[] | number[][], replaceDeleted: boolean): number[];
+
+  // /**
+  //  * adds a datum point to the search index.
+  //  * @param {Float32Array[] | number[][]} items The datum array to be added to the search index.
+  //  * @param {number} labels The index array of the datum array to be added.
+  //  * @param {boolean} replaceDeleted The flag to replace a deleted element (default: false).
+  //  */
+  // addItemsWithPtr(
+  //   vecData: Float32Array | number[],
+  //   vecSize: number,
+  //   idVecData: Uint32Array | number[],
+  //   idVecSize: number,
+  //   replaceDeleted?: boolean
+  // ): void;
   /**
    * marks the element as deleted. The marked element does not appear on the search result.
    * @param {number} label The index of the datum point to be marked.

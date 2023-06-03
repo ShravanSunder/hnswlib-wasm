@@ -101,17 +101,12 @@ namespace emscripten {
     }
 
     static bool checkFileExists(const std::string& path) {
-      if (debugLogs) printf("EmscriptenFileSystemManager: Checking if file exists: %s\n", path.c_str());
       try {
-        if (debugLogs) printf("EmscriptenFileSystemManager: Checking if file exists1: %s\n", path.c_str());
         std::string location = virtualDirectory + "/" + path;
-        if (debugLogs) printf("EmscriptenFileSystemManager: Checking if file exists2: %s\n", location.c_str());
         bool result = std::filesystem::exists(location); // Declare 'result' variable here
-        if (debugLogs) printf("EmscriptenFileSystemManager: File exists: %d\n", result);
         return result;
       }
       catch (...) {
-        if (debugLogs) printf("EmscriptenFileSystemManager: Error checking if file exists: %s\n", path.c_str());
         return false;
       }
     }
@@ -563,6 +558,8 @@ namespace emscripten {
     uint32_t dim_;
     hnswlib::HierarchicalNSW<float>* index_;
     hnswlib::SpaceInterface<float>* space_;
+    /// Lock for adding points: addPoint, addPoints, addItems
+    std::mutex add_lock_;
     bool normalize_;
 
     HierarchicalNSW(const std::string& space_name, uint32_t dim)
@@ -660,6 +657,8 @@ namespace emscripten {
     }
 
     void addPoint(const std::vector<float>& vec, uint32_t idx, bool replace_deleted = false) {
+      std::lock_guard<std::mutex> lock(add_lock_);
+
       if (index_ == nullptr) {
         if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
@@ -690,7 +689,12 @@ namespace emscripten {
       }
     }
 
-    void addItems(const std::vector<std::vector<float>>& vec, const std::vector<uint32_t>& idVec, bool replace_deleted = false) {
+    /// @brief Related to addItems which has automatic labeling logic.
+    /// @param vec 
+    /// @param idVec 
+    /// @param replace_deleted 
+    void addPoints(const std::vector<std::vector<float>>& vec, const std::vector<uint32_t>& idVec, bool replace_deleted = false) {
+      std::lock_guard<std::mutex> lock(add_lock_);
       if (index_ == nullptr) {
         if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
@@ -728,11 +732,18 @@ namespace emscripten {
         }
       }
       catch (const std::exception& e) {
-        throw std::runtime_error("Could not addItems " + std::string(e.what()));
+        throw std::runtime_error("Could not addPoints " + std::string(e.what()));
       }
     }
 
-    void addItemsWithPtr(emscripten::val vecData, uint32_t vecSize, emscripten::val idVecData, uint32_t idVecSize, bool replace_deleted = false) {
+    /// @brief Added for an experiment of performance.  Had no noticable impact.  Stick with addItems or addPoint or addPoints
+    /// @param vecData 
+    /// @param vecSize 
+    /// @param idVecData 
+    /// @param idVecSize 
+    /// @param replace_deleted 
+    void addPointsWithPtr(emscripten::val vecData, uint32_t vecSize, emscripten::val idVecData, uint32_t idVecSize, bool replace_deleted = false) {
+      std::lock_guard<std::mutex> lock(add_lock_);
       if (index_ == nullptr) {
         if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
@@ -771,8 +782,106 @@ namespace emscripten {
         }
       }
       catch (const std::exception& e) {
-        if (EmscriptenFileSystemManager::debugLogs) printf("Could not addItems %s\n", e.what());
-        throw std::runtime_error("Could not addItems " + std::string(e.what()));
+        if (EmscriptenFileSystemManager::debugLogs) printf("Could not addPoints %s\n", e.what());
+        throw std::runtime_error("Could not addPoints " + std::string(e.what()));
+      }
+    }
+
+    std::vector<uint32_t> getDeletedLabels() {
+      std::vector<uint32_t> deletedLabels;
+
+      std::lock_guard<std::mutex> guard1(index_->label_lookup_lock);
+      std::lock_guard<std::mutex> guard2(index_->deleted_elements_lock);
+
+      for (const auto& pair : index_->label_lookup_) {
+        if (index_->deleted_elements.find(pair.second) != index_->deleted_elements.end()) {
+          deletedLabels.push_back(static_cast<uint32_t>(pair.first));
+        }
+      }
+
+      return deletedLabels;
+    }
+
+    std::vector<uint32_t> generateLabels(size_t size, bool replace_deleted) {
+      std::vector<uint32_t> labels;
+
+      {
+        std::lock_guard<std::mutex> guard1(index_->label_lookup_lock);
+        std::lock_guard<std::mutex> guard2(index_->deleted_elements_lock);
+
+        // Determine the current maxLabel, its incremented later before use
+        int64_t maxLabel = -1;
+        for (const auto& pair : index_->label_lookup_) {
+          if (pair.first > maxLabel) {
+            maxLabel = pair.first;
+          }
+        }
+
+        if (replace_deleted) {
+          // Fill with deleted labels first
+          for (const auto& pair : index_->label_lookup_) {
+            if (index_->deleted_elements.find(pair.second) != index_->deleted_elements.end()) {
+              labels.push_back(static_cast<uint32_t>(pair.first));
+              if (labels.size() == size) {
+                return labels;
+              }
+            }
+          }
+        }
+
+        // If not enough deleted labels or replace_deleted is false, generate new ones
+        while (labels.size() < size) {
+          labels.push_back(static_cast<uint32_t>(++maxLabel));
+        }
+      }
+
+      return labels;
+    }
+
+    std::vector<uint32_t> addItems(const std::vector<std::vector<float>>& vec, bool replace_deleted = false) {
+      std::lock_guard<std::mutex> lock(add_lock_);
+
+      if (index_ == nullptr) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
+        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
+      }
+
+      if (vec.size() <= 0) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("The number of vectors and ids must be greater than 0.\n");
+        throw std::runtime_error("The number of vectors and ids must be greater than 0.");
+      }
+
+      if (index_->cur_element_count + vec.size() > index_->max_elements_) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("The maximum number of elements has been reached in index, please increased the index max_size.  max_size: %zu\n", index_->max_elements_);
+        throw std::runtime_error("The maximum number of elements has been reached in index, please increased the index max_size.  max_size: " + std::to_string(index_->max_elements_));
+      }
+
+      {
+        std::lock_guard<std::mutex> lock(index_->global);
+        // Generate labels for the vectors to be added
+        std::vector<uint32_t> labels = generateLabels(vec.size(), replace_deleted);
+
+        try {
+          for (size_t i = 0; i < vec.size(); ++i) {
+            if (vec[i].size() != dim_) {
+              if (EmscriptenFileSystemManager::debugLogs) printf("Invalid vector size at index %zu. Must be equal to the dimension of the space. The dimension of the space is %d.\n", i, dim_);
+              throw std::invalid_argument("Invalid vector size at index " + std::to_string(i) + ". Must be equal to the dimension of the space. The dimension of the space is " + std::to_string(this->dim_) + ".");
+            }
+
+            std::vector<float>& mutableVec = const_cast<std::vector<float>&>(vec[i]);
+
+            if (normalize_) {
+              internal::normalizePoints(mutableVec);
+            }
+
+            index_->addPoint(reinterpret_cast<void*>(mutableVec.data()), static_cast<hnswlib::labeltype>(labels[i]), replace_deleted);
+          }
+          return labels;
+        }
+        catch (const std::exception& e) {
+          if (EmscriptenFileSystemManager::debugLogs) printf("Could not addItems %s\n", e.what());
+          throw std::runtime_error("Could not addItems " + std::string(e.what()));
+        }
       }
     }
 
@@ -968,9 +1077,10 @@ namespace emscripten {
       .function("resizeIndex", &HierarchicalNSW::resizeIndex)
       .function("getPoint", &HierarchicalNSW::getPoint)
       .function("addPoint", &HierarchicalNSW::addPoint)
+      .function("addPoints", &HierarchicalNSW::addPoints)
       .function("addItems", &HierarchicalNSW::addItems)
-      //.function("addItemsWithPtr", static_cast<void(HierarchicalNSW::*)(float*, uint32_t, uint32_t*, uint32_t, bool)>(&HierarchicalNSW::addItemsWithPtr), emscripten::allow_raw_pointers())
-      .function("addItemsWithPtr", &HierarchicalNSW::addItemsWithPtr)
+      //.function("addPointsWithPtr", static_cast<void(HierarchicalNSW::*)(float*, uint32_t, uint32_t*, uint32_t, bool)>(&HierarchicalNSW::addPointsWithPtr), emscripten::allow_raw_pointers())
+      // .function("addPointsWithPtr", &HierarchicalNSW::addPointsWithPtr)
       .function("getMaxElements", &HierarchicalNSW::getMaxElements)
       .function("getIdsList", &HierarchicalNSW::getIdsList)
       .function("markDelete", &HierarchicalNSW::markDelete)

@@ -25,7 +25,7 @@ describe('benchmark initIndex and addPoints', () => {
         index.initIndex(newIndexSize, ...defaultParams.initIndex);
         const testVectorData = createVectorData(newIndexSize, hnswParamsForAda.dimensions);
 
-        index.addItems(testVectorData.vectors, testVectorData.labels, ...defaultParams.addPoint);
+        index.addItems(testVectorData.vectors, testVectorData.labels, false);
         expect(index.getCurrentCount()).toBe(newIndexSize);
       },
       {
@@ -44,7 +44,7 @@ describe('benchmark initIndex and addPoints', () => {
           index,
           testVectorData.vectors,
           testVectorData.labels,
-          ...defaultParams.addPoint
+          false
         );
         expect(index.getCurrentCount()).toBe(newIndexSize);
       },
@@ -67,7 +67,7 @@ describe('benchmark initIndex and addPoints', () => {
         index.initIndex(newIndexSize, ...defaultParams.initIndex);
         const testVectorData = createVectorData(newIndexSize, hnswParamsForAda.dimensions);
 
-        index.addItems(testVectorData.vectors, testVectorData.labels, ...defaultParams.addPoint);
+        index.addItems(testVectorData.vectors, testVectorData.labels, false);
         expect(index.getCurrentCount()).toBe(newIndexSize);
       },
       {
@@ -86,7 +86,7 @@ describe('benchmark initIndex and addPoints', () => {
           index,
           testVectorData.vectors,
           testVectorData.labels,
-          ...defaultParams.addPoint
+          false
         );
         expect(index.getCurrentCount()).toBe(newIndexSize);
       },
