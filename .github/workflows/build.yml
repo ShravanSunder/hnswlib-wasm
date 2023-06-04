@@ -23,9 +23,9 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node }}
-    - uses: mymindstorm/setup-emsdk@v11
+    - uses: mymindstorm/setup-emsdk@v12
     - name: 'yarn cache'
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: |
           ~/.yarn
