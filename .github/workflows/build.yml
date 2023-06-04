@@ -12,10 +12,11 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: ['18']
+        node: [18, 20]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v3
     - name: Setup node ${{ matrix.node }}
@@ -32,58 +33,6 @@ jobs:
         key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
         restore-keys: |
           ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-    - name: Install
-      run: yarn install
-    - name: Build
-      run: yarn build  
-    - name: Test
-      run: yarn test
-    - name: Bench
-      run: yarn test bench
-  build-win:
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Setup node 18.x
-      uses: actions/setup-node@v3
-      with:
-        node-version: 18.x
-    - uses: mymindstorm/setup-emsdk@v11
-    - name: 'cache'
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.yarn
-          ~/node_modules
-        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}    
-    - name: Install
-      run: yarn install
-    - name: Build
-      run: yarn build
-    - name: Test
-      run: yarn test
-    - name: Bench
-      run: yarn test bench
-  build-mac:
-    runs-on: macos-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Setup node 18.x
-      uses: actions/setup-node@v3
-      with:
-        node-version: 18.x
-    - uses: mymindstorm/setup-emsdk@v11
-    - name: 'cache'
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.yarn
-          ~/node_modules
-        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}    
     - name: Install
       run: yarn install
     - name: Build
