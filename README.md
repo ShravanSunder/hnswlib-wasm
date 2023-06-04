@@ -66,8 +66,8 @@ index.initIndex(1536, 36, 16, 200, true);
 // Set efSearch parameters. This can be changed after the index is created.
 index.setEfSearch(efSearch);
 
-// Now you can add items to the index
-index.addItems(vectors, labelIds);
+// Now you can add items to the index, labels are returned as an array for the vectors.  It will reuse deleted labels if possible based on the second parameter.
+const labels = index.addItems(vectors, true);
 
 // Now you can search the index
 const result1 = index.searchKnn(vectors[10], 10, undefined);
