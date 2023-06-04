@@ -11,15 +11,15 @@ async function setupBefore() {
   const testVectorData = createVectorData(baseIndexSize, hnswParamsForAda.dimensions);
   index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions);
   index.initIndex(baseIndexSize, hnswParamsForAda.m, hnswParamsForAda.efConstruction, 200, true);
-  await sleep(10);
+  await sleep(25);
 
   // Add vectors in chunks of 1000
-  const chunkSize = 2500;
+  const chunkSize = 2000;
   for (let i = 0; i < baseIndexSize; i += chunkSize) {
     console.log('chunk', i);
     const chunkVectors = testVectorData.vectors.slice(i, i + chunkSize);
     index.addItems(chunkVectors, false);
-    await sleep(10);
+    await sleep(25);
   }
 
   return { baseIndexSize, testVectorData };
@@ -27,7 +27,7 @@ async function setupBefore() {
 
 const { baseIndexSize, testVectorData } = await setupBefore();
 
-describe('benchmark searchKnn with thousand points and default params', async () => {
+describe('benchmark searchKnn with thousand points and default params', () => {
   beforeAll(async () => {
     expect(index.getCurrentCount()).toBe(baseIndexSize);
   });
