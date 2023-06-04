@@ -2,14 +2,7 @@
 
 import { bench } from 'vitest';
 import { createVectorData, sleep } from '~test/testHelpers';
-import {
-  defaultParams,
-  HierarchicalNSW,
-  HnswlibModule,
-  hnswParamsForAda,
-  loadHnswlib,
-  addItemsWithPtrsHelper,
-} from '../dist/hnswlib';
+import { HierarchicalNSW, hnswParamsForAda } from '../dist/hnswlib';
 
 let index: HierarchicalNSW;
 
@@ -18,18 +11,15 @@ async function setupBefore() {
   const testVectorData = createVectorData(baseIndexSize, hnswParamsForAda.dimensions);
   index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions);
   index.initIndex(baseIndexSize, hnswParamsForAda.m, hnswParamsForAda.efConstruction, 200, true);
-
-  await sleep(20);
+  await sleep(10);
 
   // Add vectors in chunks of 1000
   const chunkSize = 2500;
   for (let i = 0; i < baseIndexSize; i += chunkSize) {
     console.log('chunk', i);
     const chunkVectors = testVectorData.vectors.slice(i, i + chunkSize);
-    const chunkLabels = testVectorData.labels.slice(i, i + chunkSize);
-    //index.addItems(chunkVectors, chunkLabels, false);
-    addItemsWithPtrsHelper(testHnswlibModule, index, chunkVectors, chunkLabels, false);
-    await sleep(20);
+    index.addItems(chunkVectors, false);
+    await sleep(10);
   }
 
   return { baseIndexSize, testVectorData };
@@ -42,7 +32,7 @@ describe('benchmark searchKnn with thousand points and default params', async ()
     expect(index.getCurrentCount()).toBe(baseIndexSize);
   });
 
-  const setup = async (m: number, efConstruction: number) => {
+  const setup = async () => {
     index.setEfSearch(hnswParamsForAda.efSearch);
   };
 
@@ -54,7 +44,7 @@ describe('benchmark searchKnn with thousand points and default params', async ()
       expect(data.neighbors).toHaveLength(10);
     },
     {
-      setup: () => setup(hnswParamsForAda.m, hnswParamsForAda.efConstruction),
+      setup: () => setup(),
       iterations: 100,
     }
   );

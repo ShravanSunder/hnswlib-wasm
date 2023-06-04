@@ -616,7 +616,6 @@ describe('hnswlib.HierarchicalNSW', () => {
     });
 
     it(`when loading ${baseIndexSize} points with multiple addItems, then they can be loaded and fetched`, () => {
-      console.log('ssdfasdfsdfsdfsdfs');
       index.initIndex(500, ...defaultParams.initIndex);
       const labels = index.addItems(testVectorData.vectors, false);
       const label = labels[1];
@@ -626,7 +625,6 @@ describe('hnswlib.HierarchicalNSW', () => {
       const labels2 = index.addItems(testVectorData.vectors, false);
       const label2 = labels2[1];
       const point2 = testVectorData.vectors[1];
-      console.log('labels1', labels, 'labels2', labels2);
       expect(index.getPoint(label2)).toMatchObject(point2);
       expect(() => index.writeIndex(filename)).not.toThrow();
     });

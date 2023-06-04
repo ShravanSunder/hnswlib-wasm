@@ -8,6 +8,7 @@ export const defaultParams = {
    *
    */
   initIndex: [32, 128, 100, false],
+  initIndexReplace: [32, 128, 100, true],
   /**
    * @param {boolean} replaceDeleted — The flag to replace a deleted element (default: false)
    */
@@ -17,8 +18,8 @@ export type defaultParamtersTypes = keyof typeof defaultParams;
 
 export const hnswParamsForAda = {
   m: 48,
-  efSearch: 24,
-  efConstruction: 32,
+  efSearch: 64,
+  efConstruction: 128,
   numNeighbors: 8,
   dimensions: 1538,
 } as const;

@@ -9,17 +9,6 @@ describe('benchmark initIndex with defaults and 1536 dimensions', () => {
     // }
   };
   const baseIndexSize = 1000;
-  bench.skip(
-    `${baseIndexSize} points`,
-    async () => {
-      const newIndexSize = baseIndexSize;
-      index.initIndex(newIndexSize, ...defaultParams.initIndex);
-    },
-    {
-      setup,
-    }
-  );
-
   bench(
     `${baseIndexSize * 10} points`,
     async () => {
@@ -50,15 +39,6 @@ describe('benchmark initIndex with hnswParamsForAda', () => {
     // }
   };
   const baseIndexSize = 1000;
-  bench.skip(
-    `${baseIndexSize} points`,
-    async () => {
-      index.initIndex(baseIndexSize, hnswParamsForAda.m, hnswParamsForAda.efConstruction, 200, true);
-    },
-    {
-      setup,
-    }
-  );
 
   bench(
     `${baseIndexSize * 10} points`,
