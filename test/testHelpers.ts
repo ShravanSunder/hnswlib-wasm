@@ -1,4 +1,4 @@
-import { defaultParams, hnswParamsForAda, IdbfsFileStore } from '../dist/hnswlib';
+import { IDBFS_STORE_NAME, defaultParams, hnswParamsForAda } from '../dist/hnswlib';
 
 export const testErrors = {
   indexSize: /The maximum number of elements has been reached in index/,
@@ -49,8 +49,8 @@ export const getIdbFileList = async (request: IDBOpenDBRequest): Promise<string[
     request.onsuccess = () => {
       const db: IDBDatabase = request.result;
       console.log('stores', db.objectStoreNames);
-      const transaction = db.transaction(IdbfsFileStore, 'readonly');
-      const fileDataStore = transaction.objectStore(IdbfsFileStore);
+      const transaction = db.transaction(IDBFS_STORE_NAME, 'readonly');
+      const fileDataStore = transaction.objectStore(IDBFS_STORE_NAME);
 
       const fileList: string[] = [];
       const cursorRequest = fileDataStore.openCursor();

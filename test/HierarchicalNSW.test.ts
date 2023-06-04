@@ -1,10 +1,4 @@
-import {
-  addItemsWithPtrsHelper,
-  defaultParams,
-  HierarchicalNSW,
-  hnswParamsForAda,
-  syncFileSystem,
-} from '~dist/hnswlib';
+import { defaultParams, HierarchicalNSW, hnswParamsForAda, syncFileSystem } from '~dist/hnswlib';
 import { createVectorData, generateMetadata, ItemMetadata, testErrors } from '~test/testHelpers';
 import 'fake-indexeddb/auto';
 import { indexedDB } from 'fake-indexeddb';
@@ -110,7 +104,7 @@ describe('hnswlib.HierarchicalNSW', () => {
     it('throws an error if called before the index is initialized', () => {
       expect(() => {
         index.resizeIndex(5);
-      }).toThrow('Search index has not been initialized, call `initIndex` in advance.');
+      }).toThrow(/Search index has not been initialized, call `initIndex` in advance./);
     });
 
     it('resize, marks the element as deleted', () => {
@@ -399,7 +393,7 @@ describe('hnswlib.HierarchicalNSW', () => {
     it('throws an error if called before the index is initialized', () => {
       expect(() => {
         index.unmarkDelete(0);
-      }).toThrow('Search index has not been initialized, call `initIndex` in advance.');
+      }).toThrow(/Search index has not been initialized, call `initIndex` in advance./);
     });
 
     it('unmarks the element as deleted', () => {
