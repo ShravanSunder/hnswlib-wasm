@@ -70,5 +70,8 @@
     "package.json",
     "README.md",
     "LICENSE"
-  ]
+  ],
+  "volta": {
+    "node": "20.2.0"
+  }
 }
