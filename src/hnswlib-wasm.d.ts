@@ -230,6 +230,16 @@ export class HierarchicalNSW {
    * @param {string} filename The filename to save to.
    */
   writeIndex(filename: string): Promise<boolean>;
+
+  /**
+   * Automatically saves the search index after modifications.
+   * The Default is false, so you must call writeIndex() manually.
+   * Its good idea to set this to true if you want to save the index after every modification, especially since the browser may refresh or close.
+   * @param autoSave
+   * @param fileName
+   */
+  setAutoSave(autoSave: boolean, fileName: string): void;
+
   /**
    * resizes the search index.
    * @param {number} newMaxElements The new maximum number of data points.
@@ -302,7 +312,7 @@ export class HierarchicalNSW {
    * returns a list of all elements' indices.
    * @return {number[]} The list of indices.
    */
-  getIdsList(): number[];
+  getLabelList(): number[];
   /**
    * returns the datum point vector specified by label.
    * @param {number} label The index of the datum point.

@@ -120,21 +120,21 @@ describe('hnswlib.HierarchicalNSW', () => {
     });
   });
 
-  describe('#getIdsList', () => {
+  describe('#getLabelList', () => {
     let index: HierarchicalNSW;
     beforeAll(() => {
       index = new testHnswlibModule.HierarchicalNSW('l2', 3);
     });
 
     it('returns an empty array if called before the index is initialized', () => {
-      expect(index.getIdsList()).toMatchObject([]);
+      expect(index.getLabelList()).toMatchObject([]);
     });
 
     it('returns an array consists of label id', () => {
       index.initIndex(5, ...defaultParams.initIndex);
       index.addPoint([1, 2, 3], 0, false);
       index.addPoint([2, 3, 4], 1, false);
-      expect(index.getIdsList()).toEqual(expect.arrayContaining([0, 1]));
+      expect(index.getLabelList()).toEqual(expect.arrayContaining([0, 1]));
     });
   });
 
@@ -606,7 +606,19 @@ describe('hnswlib.HierarchicalNSW', () => {
       const label = testVectorData.labels[1];
       const point = testVectorData.vectors[1];
       expect(index.getPoint(label)).toMatchObject(point);
+      expect(index.getLabelList().length).toBe(baseIndexSize - 1);
       expect(() => index.writeIndex(filename)).not.toThrow();
+    });
+
+    it(`when loading ${baseIndexSize} points with addPoints and autosave is on, then they automatically saved and loaded`, () => {
+      index.initIndex(500, ...defaultParams.initIndex);
+      index.setAutoSave(true, filename);
+      index.addPoints(testVectorData.vectors, testVectorData.labels, false);
+      index.readIndex(filename, 500, false);
+      const label = testVectorData.labels[1];
+      const point = testVectorData.vectors[1];
+      expect(index.getPoint(label)).toMatchObject(point);
+      expect(index.getLabelList().length).toBe(baseIndexSize - 1);
     });
 
     it(`when loading ${baseIndexSize} points with multiple addItems, then they can be loaded and fetched`, () => {
@@ -643,7 +655,7 @@ describe('hnswlib.HierarchicalNSW', () => {
     });
   });
 
-  describe('index with 1000 points', async () => {
+  describe('index with 1000 points', () => {
     let index: HierarchicalNSW;
     const baseIndexSize = 1000;
     const testVectorData = createVectorData(baseIndexSize, hnswParamsForAda.dimensions);

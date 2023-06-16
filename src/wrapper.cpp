@@ -31,56 +31,25 @@ namespace emscripten {
 
   /*****************/
 
-
-    // typedef void (*syncfs_callback)(int);
-      // void hnswlib_syncfs_internal(bool read, syncfs_callback callback) {
-    //   // printf("Syncing FS 2...\n");
-    //   // FILE* fp = fopen("/tmp/abcdefg.txt", "w");
-    //   // if (fp) {
-    //   //   fprintf(fp, "test\n");
-    //   //   fclose(fp);
-    //   // }
-    //   EM_ASM({
-    //     const read = $0;
-    //     const callback = $1;
-
-    //     FS.syncfs(read, function(err) {
-    //       if (err) {
-    //         console.error('Error syncing FS:', err);
-    //         dynCall('vi', callback,[-1]);
-    //       }
-    //     else {
-    //       console.log('FS synced successfully');
-    //       dynCall('vi', callback,[0]);
-    //       }
-    //     });
-    //     }, read, callback);
-    // }
-
-    // void hnswlib_syncfs(bool read) {
-    //   syncIdb_js(read);
-    //   // hnswlib_syncfs_internal(read, [](int result) {
-    //   //   // Handle result here, e.g., store it in a global variable.
-    //   //   });
-    // }
   extern "C" {
-
-    EM_JS(void, syncIdb_js, (bool read), {
-      try {
-        FS.syncfs(read, function(err) {
-          if (err) {
-            console.error('Error syncing FS:', err);
+    EM_JS(void, syncIdb_js, (bool populateFromFS), {
+        try {
+            FS.syncfs(populateFromFS, function(err) {
+                setTimeout(function() {
+                    if (err) {
+                        console.error('b. jsFS Error: syncing FS:', err);
+                        Module.setIdbfsSynced(false);
+                    }
+                    else {
+                        console.log('b. jsFS synced successfully');
+                        Module.setIdbfsSynced(true);
+                    }
+                }, 1); //release event loop first
+            });
+        }
+        catch (err) {
             Module.setIdbfsSynced(false);
-          }
-          else {
-            console.log('FS synced successfully');
-            Module.setIdbfsSynced(true);
-          }
-        });
-      }
-      catch (err) {
-        Module.setIdbfsSynced(false);
-      }
+        }
       });
   }// extern c
 
@@ -111,7 +80,6 @@ namespace emscripten {
       }
     }
 
-
     static bool isInitialized() {
       std::lock_guard<std::mutex> lock(init_mutex_);
       return initialized_;
@@ -120,23 +88,31 @@ namespace emscripten {
     static bool isSynced() {
       return synced_;
     }
-    static void syncFS(bool read, emscripten::val callback) {
-      printf("Syncing FS...\n");
+
+    static void syncFS(bool populateFromFS, emscripten::val callback) {
+      if (EmscriptenFileSystemManager::debugLogs) printf("a. start syncFS...\n");
+      if (!isInitialized()) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("EmscriptenFileSystemManager must be initialized before calling syncFS\n");
+        throw std::runtime_error("EmscriptenFileSystemManager must be initialized before calling syncFS");
+      }
       sync_lock_ = std::unique_lock<std::mutex>(sync_mutex_);
       syncCallback_ = callback;
-      syncIdb_js(read);
+      synced_ = false;
+      syncIdb_js(populateFromFS);
     }
 
-    static void setIdbfsSynced(bool synced) {
-      printf("IDBFS synced: %d\n", synced);
+    static void setIsSynced(bool synced) {
+
+      if (EmscriptenFileSystemManager::debugLogs) printf("c. IDBFS has synced\n");
       synced_ = synced;
       if (!syncCallback_.isUndefined()) {
-        printf("Calling sync callback...\n");
+        printf("d. Calling sync callback...\n");
         syncCallback_.call<void>("call", emscripten::val::undefined());
         syncCallback_ = emscripten::val::undefined();
       }
       if (sync_lock_.owns_lock()) {
         sync_lock_.unlock();
+        if (EmscriptenFileSystemManager::debugLogs) printf("e. IDBFS has synced\n");
       }
     }
 
@@ -155,7 +131,7 @@ namespace emscripten {
           if (type == "IDBFS") {
             FS.mkdir(jsAllocatedDir);
             FS.mount(IDBFS, {}, jsAllocatedDir);
-            console.log('EmscriptenFileSystemManager: Mounting IDBFS filesystem...');
+            console.log('EmscriptenFileSystemManager: Mounting IDBFS filesystem...\n');
           }
           else {
              throw new Error('Unsupported filesystem type, IDBFS is supported: ' + type);
@@ -184,8 +160,8 @@ namespace emscripten {
   std::string EmscriptenFileSystemManager::virtualDirectory = "/hnswlib-index";
 
   extern "C" {
-    void setIdbfsSynced(bool synced) {
-      EmscriptenFileSystemManager::setIdbfsSynced(synced);
+    void setIdbfsSynced(bool populateFromFS) {
+      EmscriptenFileSystemManager::setIsSynced(populateFromFS);
     }
   }
 
@@ -551,7 +527,8 @@ namespace emscripten {
   };
 
 
-  /*****************/
+  /***************** *****************/
+  /***************** *****************/
 
   class HierarchicalNSW {
   public:
@@ -561,6 +538,8 @@ namespace emscripten {
     /// Lock for adding points: addPoint, addPoints, addItems
     std::mutex add_lock_;
     bool normalize_;
+    std::string autoSaveFilename_ = "";
+    bool autoSaveEnabled_ = false;
 
     HierarchicalNSW(const std::string& space_name, uint32_t dim)
       : index_(nullptr), space_(nullptr), normalize_(false), dim_(dim) {
@@ -594,6 +573,7 @@ namespace emscripten {
       }
     }
 
+
     void initIndex(uint32_t max_elements, uint32_t m = 16, uint32_t ef_construction = 200, uint32_t random_seed = 100,
       bool allow_replace_deleted = false) {
       if (index_) delete index_;
@@ -625,6 +605,8 @@ namespace emscripten {
     }
 
     void writeIndex(const std::string& filename) {
+      if (EmscriptenFileSystemManager::debugLogs) printf("WriteIndex filename: %s\n", filename.c_str());
+
       if (index_ == nullptr) {
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
@@ -633,11 +615,24 @@ namespace emscripten {
       EmscriptenFileSystemManager::syncFS(false, emscripten::val::undefined());
     }
 
+    void setAutoSave(bool autoSaveEnabled, const std::string& filename) {
+      autoSaveEnabled_ = autoSaveEnabled;
+      autoSaveFilename_ = filename;
+    }
+
+    void autoSave() {
+      if (autoSaveEnabled_ && autoSaveFilename_ != "") {
+        if (EmscriptenFileSystemManager::debugLogs) printf("AutoSave filename: %s\n", autoSaveFilename_.c_str());
+        writeIndex(autoSaveFilename_);
+      }
+    }
+
     void resizeIndex(uint32_t new_max_elements) {
       if (index_ == nullptr) {
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
       index_->resizeIndex(static_cast<size_t>(new_max_elements));
+      autoSave();
     }
 
     val getPoint(uint32_t label) {
@@ -682,6 +677,8 @@ namespace emscripten {
 
       try {
         index_->addPoint(reinterpret_cast<void*>(mutableVec.data()), static_cast<hnswlib::labeltype>(idx), replace_deleted);
+
+        autoSave();
       }
       catch (const std::exception& e) {
         if (EmscriptenFileSystemManager::debugLogs) printf("HNSWLIB ERROR: %s\n", e.what());
@@ -729,6 +726,8 @@ namespace emscripten {
           }
 
           index_->addPoint(reinterpret_cast<void*>(mutableVec.data()), static_cast<hnswlib::labeltype>(idVec[i]), replace_deleted);
+
+          autoSave();
         }
       }
       catch (const std::exception& e) {
@@ -780,6 +779,8 @@ namespace emscripten {
 
           delete[] vec;
         }
+
+        autoSave();
       }
       catch (const std::exception& e) {
         if (EmscriptenFileSystemManager::debugLogs) printf("Could not addPoints %s\n", e.what());
@@ -876,6 +877,7 @@ namespace emscripten {
 
             index_->addPoint(reinterpret_cast<void*>(mutableVec.data()), static_cast<hnswlib::labeltype>(labels[i]), replace_deleted);
           }
+          autoSave();
           return labels;
         }
         catch (const std::exception& e) {
@@ -896,7 +898,7 @@ namespace emscripten {
       return index_->max_elements_;
     }
 
-    std::vector<int> getIdsList() {
+    std::vector<int> getLabelList() {
       std::vector<int> ids;
       if (index_ == nullptr) return ids;
       for (auto kv : index_->label_lookup_) {
@@ -912,6 +914,8 @@ namespace emscripten {
       }
 
       index_->markDelete(static_cast<hnswlib::labeltype>(idx));
+
+      autoSave();
     }
 
 
@@ -925,6 +929,8 @@ namespace emscripten {
         for (const hnswlib::labeltype& label : labelsVec) {
           index_->markDelete(static_cast<hnswlib::labeltype>(label));
         }
+
+        autoSave();
       }
       catch (const std::exception& e) {
         if (EmscriptenFileSystemManager::debugLogs) printf("Could not markDeleteItems %s\n", e.what());
@@ -940,6 +946,8 @@ namespace emscripten {
       }
 
       index_->unmarkDelete(static_cast<hnswlib::labeltype>(idx));
+
+      autoSave();
     }
 
     emscripten::val searchKnn(const std::vector<float>& vec, uint32_t k, emscripten::val js_filterFn = emscripten::val::undefined()) {
@@ -1074,6 +1082,7 @@ namespace emscripten {
       .function("isIndexInitialized", &HierarchicalNSW::isIndexInitialized)
       .function("readIndex", &HierarchicalNSW::readIndex)
       .function("writeIndex", &HierarchicalNSW::writeIndex)
+      .function("setAutoSave", &HierarchicalNSW::setAutoSave)
       .function("resizeIndex", &HierarchicalNSW::resizeIndex)
       .function("getPoint", &HierarchicalNSW::getPoint)
       .function("addPoint", &HierarchicalNSW::addPoint)
@@ -1082,7 +1091,7 @@ namespace emscripten {
       //.function("addPointsWithPtr", static_cast<void(HierarchicalNSW::*)(float*, uint32_t, uint32_t*, uint32_t, bool)>(&HierarchicalNSW::addPointsWithPtr), emscripten::allow_raw_pointers())
       // .function("addPointsWithPtr", &HierarchicalNSW::addPointsWithPtr)
       .function("getMaxElements", &HierarchicalNSW::getMaxElements)
-      .function("getIdsList", &HierarchicalNSW::getIdsList)
+      .function("getLabelList", &HierarchicalNSW::getLabelList)
       .function("markDelete", &HierarchicalNSW::markDelete)
       .function("markDeleteItems", &HierarchicalNSW::markDeleteItems)
       .function("unmarkDelete", &HierarchicalNSW::unmarkDelete)
