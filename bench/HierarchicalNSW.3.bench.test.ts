@@ -9,7 +9,7 @@ let index: HierarchicalNSW;
 async function setupBefore() {
   const baseIndexSize = 10000;
   const testVectorData = createVectorData(baseIndexSize, hnswParamsForAda.dimensions);
-  index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions);
+  index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions, 'autotest.dat');
   index.initIndex(baseIndexSize, hnswParamsForAda.m, hnswParamsForAda.efConstruction, 200, true);
   await sleep(25);
 

@@ -539,10 +539,10 @@ namespace emscripten {
     std::mutex add_lock_;
     bool normalize_;
     std::string autoSaveFilename_ = "";
-    bool autoSaveEnabled_ = false;
 
-    HierarchicalNSW(const std::string& space_name, uint32_t dim)
+    HierarchicalNSW(const std::string& space_name, uint32_t dim, const std::string& autoSaveFilename)
       : index_(nullptr), space_(nullptr), normalize_(false), dim_(dim) {
+      autoSaveFilename_ = autoSaveFilename;
       if (space_name == "l2") {
         space_ = new hnswlib::L2Space(static_cast<size_t>(dim_));
       }
@@ -615,15 +615,13 @@ namespace emscripten {
       EmscriptenFileSystemManager::syncFS(false, emscripten::val::undefined());
     }
 
-    void setAutoSave(bool autoSaveEnabled, const std::string& filename) {
-      autoSaveEnabled_ = autoSaveEnabled;
-      autoSaveFilename_ = filename;
-    }
-
     void autoSave() {
-      if (autoSaveEnabled_ && autoSaveFilename_ != "") {
+      if (autoSaveFilename_ != "" && EmscriptenFileSystemManager::isInitialized()) {
         if (EmscriptenFileSystemManager::debugLogs) printf("AutoSave filename: %s\n", autoSaveFilename_.c_str());
         writeIndex(autoSaveFilename_);
+      }
+      else {
+        if (EmscriptenFileSystemManager::debugLogs) printf("AutoSave not enabled or not initialized\n");
       }
     }
 
@@ -1077,12 +1075,11 @@ namespace emscripten {
       .function("getNumDimensions", &BruteforceSearch::getNumDimensions);
 
     emscripten::class_<HierarchicalNSW>("HierarchicalNSW")
-      .constructor<const std::string&, uint32_t>()
+      .constructor<const std::string&, uint32_t, const std::string&>()
       .function("initIndex", &HierarchicalNSW::initIndex)
       .function("isIndexInitialized", &HierarchicalNSW::isIndexInitialized)
       .function("readIndex", &HierarchicalNSW::readIndex)
       .function("writeIndex", &HierarchicalNSW::writeIndex)
-      .function("setAutoSave", &HierarchicalNSW::setAutoSave)
       .function("resizeIndex", &HierarchicalNSW::resizeIndex)
       .function("getPoint", &HierarchicalNSW::getPoint)
       .function("addPoint", &HierarchicalNSW::addPoint)

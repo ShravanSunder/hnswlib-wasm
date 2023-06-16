@@ -19,29 +19,27 @@ describe('hnswlib.HierarchicalNSW', () => {
       expect(() => {
         // @ts-expect-error for testing
         new testHnswlibModule.HierarchicalNSW();
-      }).toThrow(
-        'Tried to invoke ctor of HierarchicalNSW with invalid number of parameters (0) - expected (2) parameters instead!'
-      );
+      }).toThrow(/Tried to invoke ctor of HierarchicalNSW with invalid number of parameters/);
     });
 
     it('throws an error if given a non-String object to first argument', () => {
       expect(() => {
         // @ts-expect-error for testing
-        new testHnswlibModule.HierarchicalNSW(1, 3);
+        new testHnswlibModule.HierarchicalNSW(1, 3, 'autotest.dat');
       }).toThrow('Cannot pass non-string to std::string');
     });
 
     it('throws an error if given a non-Number object to second argument', () => {
       expect(() => {
         // @ts-expect-error for testing
-        new testHnswlibModule.HierarchicalNSW('l2', '3');
+        new testHnswlibModule.HierarchicalNSW('l2', '3', 'autotest.dat');
       }).toThrow(testErrors.unsignedIntArgument);
     });
 
     it('throws an error if given a String that is neither "l2", "ip", nor "cosine" to first argument', () => {
       expect(() => {
         // @ts-expect-error for testing
-        new testHnswlibModule.HierarchicalNSW('coss', 3);
+        new testHnswlibModule.HierarchicalNSW('coss', 3, 'autotest.dat');
       }).toThrow(/invalid space should be expected l2, ip, or cosine/);
     });
   });
@@ -49,7 +47,7 @@ describe('hnswlib.HierarchicalNSW', () => {
   describe('#initIndex', () => {
     let index: HierarchicalNSW;
     beforeAll(() => {
-      index = new testHnswlibModule.HierarchicalNSW('l2', 3);
+      index = new testHnswlibModule.HierarchicalNSW('l2', 3, 'autotest.dat');
     });
 
     it('isIndexInitialized is false before init', () => {
@@ -84,7 +82,7 @@ describe('hnswlib.HierarchicalNSW', () => {
   describe('#resizeIndex', () => {
     let index: HierarchicalNSW;
     beforeAll(() => {
-      index = new testHnswlibModule.HierarchicalNSW('l2', 3);
+      index = new testHnswlibModule.HierarchicalNSW('l2', 3, 'autotest.dat');
     });
 
     it('throws an error if no arguments are given', () => {
@@ -123,7 +121,7 @@ describe('hnswlib.HierarchicalNSW', () => {
   describe('#getLabelList', () => {
     let index: HierarchicalNSW;
     beforeAll(() => {
-      index = new testHnswlibModule.HierarchicalNSW('l2', 3);
+      index = new testHnswlibModule.HierarchicalNSW('l2', 3, 'autotest.dat');
     });
 
     it('returns an empty array if called before the index is initialized', () => {
@@ -141,7 +139,7 @@ describe('hnswlib.HierarchicalNSW', () => {
   describe('#getPoint', () => {
     let index: HierarchicalNSW;
     beforeAll(() => {
-      index = new testHnswlibModule.HierarchicalNSW('l2', 3);
+      index = new testHnswlibModule.HierarchicalNSW('l2', 3, 'autotest.dat');
     });
 
     it('when the index is not initialized, then throws when an empty array if called before the index is initialized', () => {
@@ -193,7 +191,7 @@ describe('hnswlib.HierarchicalNSW', () => {
   describe('#getMaxElements', () => {
     let index: HierarchicalNSW;
     beforeAll(() => {
-      index = new testHnswlibModule.HierarchicalNSW('l2', 3);
+      index = new testHnswlibModule.HierarchicalNSW('l2', 3, 'autotest.dat');
     });
 
     it('throws if called before the index is initialized', () => {
@@ -209,7 +207,7 @@ describe('hnswlib.HierarchicalNSW', () => {
   describe('#getCurrentCount', () => {
     let index: HierarchicalNSW;
     beforeAll(() => {
-      index = new testHnswlibModule.HierarchicalNSW('l2', 3);
+      index = new testHnswlibModule.HierarchicalNSW('l2', 3, 'autotest.dat');
     });
 
     it('throws error if called before the index is initialized', () => {
@@ -227,7 +225,7 @@ describe('hnswlib.HierarchicalNSW', () => {
   describe('#getNumDimensions', () => {
     let index: HierarchicalNSW;
     beforeAll(() => {
-      index = new testHnswlibModule.HierarchicalNSW('l2', 3);
+      index = new testHnswlibModule.HierarchicalNSW('l2', 3, 'autotest.dat');
     });
 
     it('returns number of dimensions', () => {
@@ -238,7 +236,7 @@ describe('hnswlib.HierarchicalNSW', () => {
   describe('#getEf', () => {
     let index: HierarchicalNSW;
     beforeAll(() => {
-      index = new testHnswlibModule.HierarchicalNSW('l2', 3);
+      index = new testHnswlibModule.HierarchicalNSW('l2', 3, 'autotest.dat');
     });
 
     it('throws an error if called before the index is initialized', () => {
@@ -256,7 +254,7 @@ describe('hnswlib.HierarchicalNSW', () => {
   describe('#setEf', () => {
     let index: HierarchicalNSW;
     beforeAll(() => {
-      index = new testHnswlibModule.HierarchicalNSW('l2', 3);
+      index = new testHnswlibModule.HierarchicalNSW('l2', 3, 'autotest.dat');
     });
 
     it('throws an error if no arguments are given', () => {
@@ -289,7 +287,7 @@ describe('hnswlib.HierarchicalNSW', () => {
   describe('#addPoint', () => {
     let index: HierarchicalNSW;
     beforeAll(() => {
-      index = new testHnswlibModule.HierarchicalNSW('l2', 3);
+      index = new testHnswlibModule.HierarchicalNSW('l2', 3, 'autotest.dat');
     });
 
     it('throws an error if no arguments are given', () => {
@@ -338,7 +336,7 @@ describe('hnswlib.HierarchicalNSW', () => {
   describe('#markDelete', () => {
     let index: HierarchicalNSW;
     beforeAll(() => {
-      index = new testHnswlibModule.HierarchicalNSW('l2', 3);
+      index = new testHnswlibModule.HierarchicalNSW('l2', 3, 'autotest.dat');
     });
 
     it('throws an error if no arguments are given', () => {
@@ -373,7 +371,7 @@ describe('hnswlib.HierarchicalNSW', () => {
   describe('#unmarkDelete', () => {
     let index: HierarchicalNSW;
     beforeAll(() => {
-      index = new testHnswlibModule.HierarchicalNSW('l2', 3);
+      index = new testHnswlibModule.HierarchicalNSW('l2', 3, 'autotest.dat');
     });
 
     it('throws an error if no arguments are given', () => {
@@ -411,7 +409,7 @@ describe('hnswlib.HierarchicalNSW', () => {
     describe('when metric space is "l2"', () => {
       let index: HierarchicalNSW;
       beforeAll(() => {
-        index = new testHnswlibModule.HierarchicalNSW('l2', 3);
+        index = new testHnswlibModule.HierarchicalNSW('l2', 3, 'autotest.dat');
       });
 
       beforeAll(() => {
@@ -474,7 +472,7 @@ describe('hnswlib.HierarchicalNSW', () => {
     describe('when metric space is "ip"', () => {
       let index: HierarchicalNSW;
       beforeAll(() => {
-        index = new testHnswlibModule.HierarchicalNSW('ip', 3);
+        index = new testHnswlibModule.HierarchicalNSW('ip', 3, 'autotest.dat');
       });
 
       beforeAll(() => {
@@ -495,7 +493,7 @@ describe('hnswlib.HierarchicalNSW', () => {
     describe('when metric space is "cosine"', () => {
       let index: HierarchicalNSW;
       beforeAll(() => {
-        index = new testHnswlibModule.HierarchicalNSW('cosine', 3);
+        index = new testHnswlibModule.HierarchicalNSW('cosine', 3, 'autotest.dat');
       });
 
       beforeAll(() => {
@@ -516,7 +514,7 @@ describe('hnswlib.HierarchicalNSW', () => {
     describe('when filter function is given', () => {
       let index: HierarchicalNSW;
       beforeAll(() => {
-        index = new testHnswlibModule.HierarchicalNSW('l2', 3);
+        index = new testHnswlibModule.HierarchicalNSW('l2', 3, 'autotest.dat');
       });
       const filter = (label: number) => label % 2 === 0;
 
@@ -541,7 +539,7 @@ describe('hnswlib.HierarchicalNSW', () => {
     let index: HierarchicalNSW;
     const filename = 'testindex.dat';
     beforeAll(async () => {
-      index = new testHnswlibModule.HierarchicalNSW('ip', 3);
+      index = new testHnswlibModule.HierarchicalNSW('ip', 3, 'autotest.dat');
     });
 
     beforeEach(async () => {
@@ -569,7 +567,7 @@ describe('hnswlib.HierarchicalNSW', () => {
     });
 
     it('can read the index back', async () => {
-      index = new testHnswlibModule.HierarchicalNSW('ip', 3);
+      index = new testHnswlibModule.HierarchicalNSW('ip', 3, 'autotest.dat');
       expect(() => index.getPoint(1)).toThrow(testErrors.indexNotInitalized);
       index.readIndex(filename, 10, false);
       expect(index.getPoint(1)).toMatchObject([2, 3, 4]);
@@ -580,7 +578,7 @@ describe('hnswlib.HierarchicalNSW', () => {
     const filename = 'testindex2.dat';
 
     it('when calling readIndex directly, it should work', async () => {
-      const index = new testHnswlibModule.HierarchicalNSW('ip', 3);
+      const index = new testHnswlibModule.HierarchicalNSW('ip', 3, 'autotest.dat');
       expect(() => index.getPoint(1)).toThrow(testErrors.indexNotInitalized);
       try {
         const result = index.readIndex(filename, 10, false);
@@ -597,7 +595,7 @@ describe('hnswlib.HierarchicalNSW', () => {
     const testVectorData = createVectorData(baseIndexSize - 1, hnswParamsForAda.dimensions);
     let index: HierarchicalNSW;
     beforeEach(async () => {
-      index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions);
+      index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions, 'autotest.dat');
     });
 
     it(`when loading ${baseIndexSize} points with addPoints, then they can be loaded and fetched`, () => {
@@ -612,9 +610,8 @@ describe('hnswlib.HierarchicalNSW', () => {
 
     it(`when loading ${baseIndexSize} points with addPoints and autosave is on, then they automatically saved and loaded`, () => {
       index.initIndex(500, ...defaultParams.initIndex);
-      index.setAutoSave(true, filename);
       index.addPoints(testVectorData.vectors, testVectorData.labels, false);
-      index.readIndex(filename, 500, false);
+      index.readIndex('autotest.dat', 500, false);
       const label = testVectorData.labels[1];
       const point = testVectorData.vectors[1];
       expect(index.getPoint(label)).toMatchObject(point);
@@ -642,7 +639,7 @@ describe('hnswlib.HierarchicalNSW', () => {
     const testVectorData = createVectorData(baseIndexSize - 1, hnswParamsForAda.dimensions);
     let index: HierarchicalNSW;
     beforeEach(async () => {
-      index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions);
+      index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions, 'autotest.dat');
     });
 
     it(`when loading ${baseIndexSize} points with add Items, then they can be loaded and removed`, () => {
@@ -680,7 +677,7 @@ describe('hnswlib.HierarchicalNSW', () => {
     });
 
     const setup = async (m: number, efConstruction: number, efSearch: number): Promise<number[]> => {
-      index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions);
+      index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions, 'autotest.dat');
       index.initIndex(baseIndexSize, m, efConstruction, 200, true);
       const testLabels = index.addItems(testVectorData.vectors, false);
       index.setEfSearch(efSearch);

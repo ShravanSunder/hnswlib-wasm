@@ -9,7 +9,7 @@ describe(`benchmark initIndex and addPoints/additems ${baseIndexSize} items`, ()
   const testVectorData = createVectorData(newIndexSize, hnswParamsForAda.dimensions);
 
   const setup = async () => {
-    index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions);
+    index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions, 'autotest.dat');
   };
 
   bench(

@@ -1,6 +1,6 @@
 {
   "name": "hnswlib-wasm",
-  "version": "0.6.7",
+  "version": "0.7.0",
   "description": "typescript and wasm bindings for Hnswlib",
   "module": "./dist/hnswlib.js",
   "types": "./dist/hnswlib.d.ts",

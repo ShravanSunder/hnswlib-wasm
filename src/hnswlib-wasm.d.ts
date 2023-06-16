@@ -199,7 +199,7 @@ export class HierarchicalNSW {
    * @param {SpaceName} spaceName The metric space to create for the index ('l2', 'ip', or 'cosine').
    * @param {number} numDimensions The dimesionality of metric space.
    */
-  constructor(spaceName: SpaceName, numDimensions: number);
+  constructor(spaceName: SpaceName, numDimensions: number, autoSaveFilename: string);
   /**
    * Initialize index.
    * @param {number} maxElements The maximum number of elements.
@@ -230,15 +230,6 @@ export class HierarchicalNSW {
    * @param {string} filename The filename to save to.
    */
   writeIndex(filename: string): Promise<boolean>;
-
-  /**
-   * Automatically saves the search index after modifications.
-   * The Default is false, so you must call writeIndex() manually.
-   * Its good idea to set this to true if you want to save the index after every modification, especially since the browser may refresh or close.
-   * @param autoSave
-   * @param fileName
-   */
-  setAutoSave(autoSave: boolean, fileName: string): void;
 
   /**
    * resizes the search index.

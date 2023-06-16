@@ -5,7 +5,7 @@ import { defaultParams, HierarchicalNSW, HnswlibModule, hnswParamsForAda, loadHn
 describe('benchmark initIndex with defaults and 1536 dimensions', () => {
   let index: HierarchicalNSW;
   const setup = async () => {
-    index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions);
+    index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions, 'autotest.dat');
     // }
   };
   const baseIndexSize = 1000;
@@ -35,7 +35,7 @@ describe('benchmark initIndex with defaults and 1536 dimensions', () => {
 describe('benchmark initIndex with hnswParamsForAda', () => {
   let index: HierarchicalNSW;
   const setup = async () => {
-    index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions);
+    index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions, 'autotest.dat');
     // }
   };
   const baseIndexSize = 1000;
