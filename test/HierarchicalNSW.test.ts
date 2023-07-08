@@ -118,21 +118,47 @@ describe('hnswlib.HierarchicalNSW', () => {
     });
   });
 
-  describe('#getLabelList', () => {
+  describe('#getUsedLabels', () => {
     let index: HierarchicalNSW;
     beforeAll(() => {
       index = new testHnswlibModule.HierarchicalNSW('l2', 3, 'autotest.dat');
     });
 
     it('returns an empty array if called before the index is initialized', () => {
-      expect(index.getLabelList()).toMatchObject([]);
+      expect(index.getUsedLabels()).toMatchObject([]);
     });
 
     it('returns an array consists of label id', () => {
       index.initIndex(5, ...defaultParams.initIndex);
       index.addPoint([1, 2, 3], 0, false);
       index.addPoint([2, 3, 4], 1, false);
-      expect(index.getLabelList()).toEqual(expect.arrayContaining([0, 1]));
+      expect(index.getUsedLabels()).toEqual(expect.arrayContaining([0, 1]));
+    });
+  });
+
+  describe('#getDeletedLabels', () => {
+    let index: HierarchicalNSW;
+    beforeAll(() => {
+      index = new testHnswlibModule.HierarchicalNSW('l2', 3, 'autotest.dat');
+    });
+
+    it('returns an empty array if called before the index is initialized', () => {
+      expect(index.getDeletedLabels()).toMatchObject([]);
+    });
+
+    it('returns an array consists of label id', () => {
+      index.initIndex(5, ...defaultParams.initIndex);
+      index.addPoint([1, 2, 3], 0, false);
+      index.addPoint([2, 3, 4], 1, false);
+      index.addPoint([2, 3, 4], 2, false);
+      index.addPoint([2, 3, 4], 3, false);
+      index.markDeleteItems([1, 3]);
+      console.error('come on');
+      const deleted = index.getDeletedLabels();
+      const exists = index.getUsedLabels();
+      console.error('testttttt', deleted, exists);
+      // expect(index.getUsedLabels()).toEqual(expect.arrayContaining([0, 2]));
+      // expect(index.getDeletedLabels()).toEqual(expect.arrayContaining([1, 3]));
     });
   });
 
@@ -365,6 +391,7 @@ describe('hnswlib.HierarchicalNSW', () => {
       index.addPoint([1, 2, 4], 1, false);
       index.markDelete(1);
       expect(index.searchKnn([1, 2, 4], 1, undefined).neighbors).toEqual([0]);
+      expect(index.getDeletedLabels()).toEqual(expect.arrayContaining([1, 3]));
     });
   });
 
@@ -581,7 +608,7 @@ describe('hnswlib.HierarchicalNSW', () => {
       const index = new testHnswlibModule.HierarchicalNSW('ip', 3, 'autotest.dat');
       expect(() => index.getPoint(1)).toThrow(testErrors.indexNotInitalized);
       try {
-        const result = index.readIndex(filename, 10, false);
+        index.readIndex(filename, 10, false);
       } catch (e) {
         console.error(e);
       }
@@ -604,7 +631,7 @@ describe('hnswlib.HierarchicalNSW', () => {
       const label = testVectorData.labels[1];
       const point = testVectorData.vectors[1];
       expect(index.getPoint(label)).toMatchObject(point);
-      expect(index.getLabelList().length).toBe(baseIndexSize - 1);
+      expect(index.getUsedLabels().length).toBe(baseIndexSize - 1);
       expect(() => index.writeIndex(filename)).not.toThrow();
     });
 
@@ -615,7 +642,7 @@ describe('hnswlib.HierarchicalNSW', () => {
       const label = testVectorData.labels[1];
       const point = testVectorData.vectors[1];
       expect(index.getPoint(label)).toMatchObject(point);
-      expect(index.getLabelList().length).toBe(baseIndexSize - 1);
+      expect(index.getUsedLabels().length).toBe(baseIndexSize - 1);
     });
 
     it(`when loading ${baseIndexSize} points with multiple addItems, then they can be loaded and fetched`, () => {

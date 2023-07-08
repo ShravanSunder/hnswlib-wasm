@@ -535,8 +535,8 @@ namespace emscripten {
     uint32_t dim_;
     hnswlib::HierarchicalNSW<float>* index_;
     hnswlib::SpaceInterface<float>* space_;
-    /// @brief Lock for adding points: addPoint, addPoints, addItems
-    std::mutex add_lock_;
+    /// @brief Lock for mutating the index points: addPoint, addPoints, addItems, markdeleted
+    std::mutex mutate_lock_;
     /// @brief Cache for used labels populated from index_ by updateUsedLabelsCache()
     std::vector<uint32_t> usedLabelsCache_;
     /// @brief Cache for deleted labels populated from index_ by updateDeletedLabelsCache()
@@ -593,6 +593,8 @@ namespace emscripten {
 
       try {
         index_ = new hnswlib::HierarchicalNSW<float>(space_, path, false, max_elements, allow_replace_deleted);
+
+        updateLabelCaches();
       }
       catch (const std::runtime_error& e) {
         std::string errorMessage(e.what());
@@ -664,37 +666,34 @@ namespace emscripten {
       return deletedLabelsCache_;
     }
 
-    /// @brief Get a list of deleted labels
-    void updateDeletedLabels() {
-      std::vector<uint32_t> deletedLabels;
-
-      std::lock_guard<std::mutex> guard1(index_->label_lookup_lock);
-      std::lock_guard<std::mutex> guard2(index_->deleted_elements_lock);
-
-      for (const auto& pair : index_->label_lookup_) {
-        if (index_->deleted_elements.find(pair.second) != index_->deleted_elements.end()) {
-          deletedLabels.push_back(static_cast<uint32_t>(pair.first));
-        }
-      }
-
-      deletedLabelsCache_ = std::move(deletedLabels);
-    }
-
-    /// @brief Update local used labels cache
-    void updateUsedLabelsCache() {
+    /// @brief Update local used and deleted labels cache
+    void updateLabelCaches() {
       std::vector<uint32_t> usedLabels;
+      std::vector<uint32_t> deletedLabels;
+      std::unordered_map<hnswlib::tableint, hnswlib::labeltype> reverse_label_lookup;
 
       std::lock_guard<std::mutex> guard1(index_->label_lookup_lock);
       std::lock_guard<std::mutex> guard2(index_->deleted_elements_lock);
 
       for (const auto& kv : index_->label_lookup_) {
+        reverse_label_lookup[kv.second] = kv.first;
         if (index_->deleted_elements.find(kv.second) == index_->deleted_elements.end()) {
           usedLabels.push_back(static_cast<uint32_t>(kv.first));
         }
       }
 
+      for (const auto& element : index_->deleted_elements) {
+        auto it = reverse_label_lookup.find(element);
+        if (it != reverse_label_lookup.end()) {
+          deletedLabels.push_back(static_cast<uint32_t>(it->second));
+        }
+      }
+
       usedLabelsCache_ = std::move(usedLabels);
+      deletedLabelsCache_ = std::move(deletedLabels);
     }
+
+
 
     /// @brief Create labels based on the current used labels and labels marked deleted
     /// @param size input array size
@@ -737,7 +736,7 @@ namespace emscripten {
     }
 
     std::vector<uint32_t> addItems(const std::vector<std::vector<float>>& vec, bool replace_deleted = false) {
-      std::lock_guard<std::mutex> lock(add_lock_);
+      std::lock_guard<std::mutex> lock(mutate_lock_);
 
       if (index_ == nullptr) {
         if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
@@ -775,7 +774,7 @@ namespace emscripten {
             index_->addPoint(reinterpret_cast<void*>(mutableVec.data()), static_cast<hnswlib::labeltype>(labels[i]), replace_deleted);
           }
           autoSaveIndex();
-          updateUsedLabelsCache();
+          updateLabelCaches();
           return labels;
         }
         catch (const std::exception& e) {
@@ -786,7 +785,7 @@ namespace emscripten {
     }
 
     void addPoint(const std::vector<float>& vec, uint32_t idx, bool replace_deleted = false) {
-      std::lock_guard<std::mutex> lock(add_lock_);
+      std::lock_guard<std::mutex> lock(mutate_lock_);
 
       if (index_ == nullptr) {
         if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
@@ -813,7 +812,7 @@ namespace emscripten {
         index_->addPoint(reinterpret_cast<void*>(mutableVec.data()), static_cast<hnswlib::labeltype>(idx), replace_deleted);
 
         autoSaveIndex();
-        updateUsedLabelsCache();
+        updateLabelCaches();
       }
       catch (const std::exception& e) {
         if (EmscriptenFileSystemManager::debugLogs) printf("HNSWLIB ERROR: %s\n", e.what());
@@ -826,7 +825,7 @@ namespace emscripten {
     /// @param idVec 
     /// @param replace_deleted 
     void addPoints(const std::vector<std::vector<float>>& vec, const std::vector<uint32_t>& idVec, bool replace_deleted = false) {
-      std::lock_guard<std::mutex> lock(add_lock_);
+      std::lock_guard<std::mutex> lock(mutate_lock_);
       if (index_ == nullptr) {
         if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
@@ -864,7 +863,7 @@ namespace emscripten {
         }
 
         autoSaveIndex();
-        updateUsedLabelsCache();
+        updateLabelCaches();
       }
       catch (const std::exception& e) {
         throw std::runtime_error("Could not addPoints " + std::string(e.what()));
@@ -887,10 +886,12 @@ namespace emscripten {
         if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
+      std::lock_guard<std::mutex> lock(mutate_lock_);
 
       index_->markDelete(static_cast<hnswlib::labeltype>(idx));
 
       autoSaveIndex();
+      updateLabelCaches();
     }
 
 
@@ -900,12 +901,15 @@ namespace emscripten {
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
 
+      std::lock_guard<std::mutex> lock(mutate_lock_);
+
       try {
         for (const hnswlib::labeltype& label : labelsVec) {
           index_->markDelete(static_cast<hnswlib::labeltype>(label));
         }
 
         autoSaveIndex();
+        updateLabelCaches();
       }
       catch (const std::exception& e) {
         if (EmscriptenFileSystemManager::debugLogs) printf("Could not markDeleteItems %s\n", e.what());
@@ -920,9 +924,12 @@ namespace emscripten {
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
 
+      std::lock_guard<std::mutex> lock(mutate_lock_);
+
       index_->unmarkDelete(static_cast<hnswlib::labeltype>(idx));
 
       autoSaveIndex();
+      updateLabelCaches();
     }
 
     emscripten::val searchKnn(const std::vector<float>& vec, uint32_t k, emscripten::val js_filterFn = emscripten::val::undefined()) {

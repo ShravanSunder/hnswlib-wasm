@@ -300,10 +300,15 @@ export class HierarchicalNSW {
     filter: FilterFunction | undefined
   ): SearchResult;
   /**
-   * returns a list of all elements' indices.
+   * returns a list of all used labels
    * @return {number[]} The list of indices.
    */
-  getLabelList(): number[];
+  getUsedLabels(): number[];
+  /**
+   * returns a list of all deleted labels
+   * @return {number[]} The list of indices.
+   */
+  getDeletedLabels(): number[];
   /**
    * returns the datum point vector specified by label.
    * @param {number} label The index of the datum point.
