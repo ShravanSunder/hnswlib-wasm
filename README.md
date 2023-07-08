@@ -44,7 +44,7 @@ Here is a full example of loading a index if it exists or creating a new index i
 
   const exists = this.hnswlib.EmscriptenFileSystemManager.checkFileExists(filename);
   if (!exists) {
-    this.vectorHnswIndex.initIndex(100000, 48, 128, 100, true);
+    this.vectorHnswIndex.initIndex(100000, 48, 128, 100);
     this.vectorHnswIndex.setEfSearch(32);
     this.vectorHnswIndex.writeIndex('ghost.dat');
   } else {
@@ -61,7 +61,7 @@ You can create the index and use it like so.
 const hnswIndex = lib.HierarchicalNSW('l2', 100);
 
 // Initialize the index with the dimensions (1536), m, efConstruction. See the section below on parameters for more details. These cannot be changed after the index is created.
-index.initIndex(1536, 36, 16, 200, true);
+index.initIndex(1536, 36, 16, 200);
 
 // Set efSearch parameters. This can be changed after the index is created.
 index.setEfSearch(efSearch);
