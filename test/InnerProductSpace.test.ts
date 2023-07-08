@@ -16,9 +16,7 @@ describe('InnerProductSpace', () => {
     expect(() => {
       //@ts-expect-error
       new hnswlib.InnerProductSpace();
-    }).toThrow(
-      'Tried to invoke ctor of InnerProductSpace with invalid number of parameters (0) - expected (1) parameters instead!'
-    );
+    }).toThrow(/Tried to invoke ctor of InnerProductSpace with invalid number of parameters/);
   });
 
   it('throws an error if given a non-Number argument', () => {
@@ -39,7 +37,7 @@ describe('InnerProductSpace', () => {
       expect(() => {
         //@ts-expect-error
         space.distance();
-      }).toThrow('function InnerProductSpace.distance called with 0 arguments, expected 2 args!');
+      }).toThrow(/function InnerProductSpace.distance called with/);
     });
 
     it('throws an error if given a non-Array argument', () => {

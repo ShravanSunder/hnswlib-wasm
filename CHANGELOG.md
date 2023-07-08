@@ -8,9 +8,9 @@
   const index = new HierarchicalNSW('cosine', 3);
   index.initIndex({ maxElements: 3 });
 
-  index.addPoint([1, 2, 3], 1, ...defaultParams.addPoint);
-  index.addPoint([4, 5, 6], 2, ...defaultParams.addPoint);
-  index.addPoint([7, 8, 9], 3, ...defaultParams.addPoint);
+  index.addPoint([1, 2, 3], 1, false);
+  index.addPoint([4, 5, 6], 2, false);
+  index.addPoint([7, 8, 9], 3, false);
 
   // Searching based on cosine distance (1 subtract cosine similarity).
   console.table(index.searchKnn([1, 2, 2], 2));
@@ -32,8 +32,8 @@
   const index = new HierarchicalNSW('l2', 3);
   index.initIndex({ maxElements: 2 });
 
-  index.addPoint([1, 2, 3], 1, ...defaultParams.addPoint);
-  index.addPoint([4, 5, 6], 2, ...defaultParams.addPoint);
+  index.addPoint([1, 2, 3], 1, false);
+  index.addPoint([4, 5, 6], 2, false);
 
   console.log(index.getPoint(1));
   // [ 1, 2, 3 ]
@@ -61,14 +61,14 @@
   const index = new HierarchicalNSW('l2', 3);
   index.initIndex({ maxElements: 2 });
 
-  index.addPoint([1, 2, 3], 1, ...defaultParams.addPoint);
-  index.addPoint([4, 5, 6], 2, ...defaultParams.addPoint);
+  index.addPoint([1, 2, 3], 1, false);
+  index.addPoint([4, 5, 6], 2, false);
 
   index.markDelete(1);
 
   // HierarchicalNSW throws the error here since the number of data points has reached maxElements:
-  // Hnswlib Error: The number of elements exceeds the specified limit
-  index.addPoint([6, 5, 4], 3, ...defaultParams.addPoint);
+  // HNSWLIB ERROR: The number of elements exceeds the specified limit
+  index.addPoint([6, 5, 4], 3, false);
   ```
   ```javascript
   import { HierarchicalNSW } from 'hnswlib-node';
@@ -78,14 +78,14 @@
   // Initizaling the index with `allowReplaceDeleted` set to true.
   index.initIndex({ maxElements: 2, allowReplaceDeleted: true });
 
-  index.addPoint([1, 2, 3], 1, ...defaultParams.addPoint);
-  index.addPoint([4, 5, 6], 2, ...defaultParams.addPoint);
+  index.addPoint([1, 2, 3], 1, false);
+  index.addPoint([4, 5, 6], 2, false);
 
   index.markDelete(1);
 
   // By setting the third argument (replaceDeleted) to true, HierarchicalNSW does not throw the error
   // since the newly added datum point will replace the deleted datum point.
-  index.addPoint([6, 5, 4], 3, ...defaultParams.addPoint, true);
+  index.addPoint([6, 5, 4], 3, false, true);
   ```
 - Add support filtering function by label in `searchKnn` of BruteforeceSearch and HierarchicalNSW.
   ```javascript
@@ -94,10 +94,10 @@
   const index = new HierarchicalNSW('l2', 3);
   index.initIndex({ maxElements: 4 });
 
-  index.addPoint([1, 2, 3], 1, ...defaultParams.addPoint);
-  index.addPoint([1, 3, 3], 2, ...defaultParams.addPoint);
-  index.addPoint([1, 2, 3], 3, ...defaultParams.addPoint);
-  index.addPoint([1, 3, 3], 4, ...defaultParams.addPoint);
+  index.addPoint([1, 2, 3], 1, false);
+  index.addPoint([1, 3, 3], 2, false);
+  index.addPoint([1, 2, 3], 3, false);
+  index.addPoint([1, 3, 3], 4, false);
 
   // setting filter funtion that allows only even labels.
   const filter = (label: number): boolean => label % 2 == 0;

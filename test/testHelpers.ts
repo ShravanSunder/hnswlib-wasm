@@ -1,4 +1,4 @@
-import { defaultParams, hnswParamsForAda, IdbfsFileStore } from '../dist/hnswlib';
+import { IDBFS_STORE_NAME, defaultParams, hnswParamsForAda } from '../dist/hnswlib';
 
 export const testErrors = {
   indexSize: /The maximum number of elements has been reached in index/,
@@ -18,6 +18,13 @@ export const testErrors = {
 
 export type testErrorTypes = keyof typeof testErrors;
 
+/**
+ * Creates an array of random vectors and their corresponding labels.  Labels are only used for addPoint or addPoints.  addItems will generate its own labels.
+ * @param numOfVec The number of vectors to create. Default is 100.
+ * @param dimensions The number of dimensions for each vector. Default is hnswParamsForAda.dimensions.
+ * @param start The starting label for the first vector. Default is 0.
+ * @returns An object containing the array of vectors and their corresponding labels.
+ */
 export const createVectorData = (numOfVec = 100, dimensions: number = hnswParamsForAda.dimensions, start = 0) => {
   const vectors: Float32Array[] = [];
   const labels: number[] = [];
@@ -42,8 +49,8 @@ export const getIdbFileList = async (request: IDBOpenDBRequest): Promise<string[
     request.onsuccess = () => {
       const db: IDBDatabase = request.result;
       console.log('stores', db.objectStoreNames);
-      const transaction = db.transaction(IdbfsFileStore, 'readonly');
-      const fileDataStore = transaction.objectStore(IdbfsFileStore);
+      const transaction = db.transaction(IDBFS_STORE_NAME, 'readonly');
+      const fileDataStore = transaction.objectStore(IDBFS_STORE_NAME);
 
       const fileList: string[] = [];
       const cursorRequest = fileDataStore.openCursor();

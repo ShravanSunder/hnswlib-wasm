@@ -32,7 +32,29 @@ import { loadHnswlib } from 'hnswlib-wasm';
 const lib = await loadHnswlib();
 ```
 
-You can then create the index and use it:
+Here is a full example of loading a index if it exists or creating a new index if it doesn't exist:
+
+```ts
+  const filename = 'ghost.dat';
+  const { loadHnswlib } = await import('hnswlib-wasm');
+  this.hnswlib = await loadHnswlib();
+  this.hnswlib.EmscriptenFileSystemManager.setDebugLogs(true);
+  this.vectorHnswIndex = new this.hnswlib.HierarchicalNSW('cosine', 1536);
+  await syncFileSystem('read');
+
+  const exists = this.hnswlib.EmscriptenFileSystemManager.checkFileExists(filename);
+  if (!exists) {
+    this.vectorHnswIndex.initIndex(100000, 48, 128, 100, true);
+    this.vectorHnswIndex.setEfSearch(32);
+    this.vectorHnswIndex.writeIndex('ghost.dat');
+  } else {
+    this.vectorHnswIndex.readIndex(filename, 100000, true);
+    this.vectorHnswIndex.setEfSearch(32);
+  }
+```
+
+
+You can create the index and use it like so.
 
 ```ts
 // Here you're creating a new index with the L2 distance metric and 1000 as the max number of elements
@@ -44,8 +66,8 @@ index.initIndex(1536, 36, 16, 200, true);
 // Set efSearch parameters. This can be changed after the index is created.
 index.setEfSearch(efSearch);
 
-// Now you can add items to the index
-index.addItems(vectors, labelIds);
+// Now you can add items to the index, labels are returned as an array for the vectors.  It will reuse deleted labels if possible based on the second parameter.
+const labels = index.addItems(vectors, true);
 
 // Now you can search the index
 const result1 = index.searchKnn(vectors[10], 10, undefined);
@@ -56,6 +78,7 @@ const labelFilter = (label: number) => {
 }
 const result2 = index.searchKnn(testVectorData.vectors[10], 10, labelFilter);
 ```
+
 
 More usage examples to be added.
 
@@ -85,8 +108,8 @@ await index.readIndex('savedIndex', false);
 The `syncFs` method is used to synchronize the Emscripten file system with the persistent storage IDBFS. You can use this method to save or read data from the file system's persistent source.
 
 ```ts
-await lib.syncFs(true); // Read data from the persistent source
-await lib.syncFs(false); // Save data to the persistent source
+await lib.EmscriptenFileSystemManager.syncFS(true, emscripten::val::undefined()); // Read data from the persistent source
+await lib.EmscriptenFileSystemManager.syncFS(false, emscripten::val::undefined()); // Save data to the persistent source
 ```
 
 

@@ -1,99 +1,41 @@
 import { bench } from 'vitest';
 import { createVectorData } from '~test/testHelpers';
-import {
-  addItemsWithPtrsHelper,
-  defaultParams,
-  HierarchicalNSW,
-  HnswlibModule,
-  hnswParamsForAda,
-  loadHnswlib,
-} from '../dist/hnswlib';
+import { defaultParams, HierarchicalNSW, hnswParamsForAda } from '../dist/hnswlib';
 
-describe('benchmark initIndex and addPoints', () => {
-  const baseIndexSize = 10;
+const baseIndexSize = 1000;
+describe(`benchmark initIndex and addPoints/additems ${baseIndexSize} items`, () => {
+  let index: HierarchicalNSW;
+  const newIndexSize = baseIndexSize;
+  const testVectorData = createVectorData(newIndexSize, hnswParamsForAda.dimensions);
 
-  describe.skip(`${baseIndexSize * 10} points`, () => {
-    let index: HierarchicalNSW;
-    const newIndexSize = baseIndexSize * 10;
-    const setup = async () => {
-      index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions);
-    };
+  const setup = async () => {
+    index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions, 'autotest.dat');
+  };
 
-    bench(
-      `vectors`,
-      async () => {
-        index.initIndex(newIndexSize, ...defaultParams.initIndex);
-        const testVectorData = createVectorData(newIndexSize, hnswParamsForAda.dimensions);
-
-        index.addItems(testVectorData.vectors, testVectorData.labels, ...defaultParams.addPoint);
-        expect(index.getCurrentCount()).toBe(newIndexSize);
-      },
-      {
-        setup,
-        iterations: 5,
-      }
-    );
-
-    bench(
-      `pointers`,
-      async () => {
-        index.initIndex(newIndexSize, ...defaultParams.initIndex);
-        const testVectorData = createVectorData(newIndexSize, hnswParamsForAda.dimensions);
-        addItemsWithPtrsHelper(
-          testHnswlibModule,
-          index,
-          testVectorData.vectors,
-          testVectorData.labels,
-          ...defaultParams.addPoint
-        );
-        expect(index.getCurrentCount()).toBe(newIndexSize);
-      },
-      {
-        setup,
-        iterations: 5,
-      }
-    );
-  });
-  describe(`${baseIndexSize * 100} points`, () => {
-    let index: HierarchicalNSW;
-    const newIndexSize = baseIndexSize * 100;
-    const setup = async () => {
-      index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions);
-    };
-
-    bench(
-      `vectors`,
-      async () => {
-        index.initIndex(newIndexSize, ...defaultParams.initIndex);
-        const testVectorData = createVectorData(newIndexSize, hnswParamsForAda.dimensions);
-
-        index.addItems(testVectorData.vectors, testVectorData.labels, ...defaultParams.addPoint);
-        expect(index.getCurrentCount()).toBe(newIndexSize);
-      },
-      {
-        setup,
-        iterations: 5,
-      }
-    );
-
-    bench(
-      `pointers`,
-      async () => {
-        index.initIndex(newIndexSize, ...defaultParams.initIndex);
-        const testVectorData = createVectorData(newIndexSize, hnswParamsForAda.dimensions);
-        addItemsWithPtrsHelper(
-          testHnswlibModule,
-          index,
-          testVectorData.vectors,
-          testVectorData.labels,
-          ...defaultParams.addPoint
-        );
-        expect(index.getCurrentCount()).toBe(newIndexSize);
-      },
-      {
-        setup,
-        iterations: 5,
-      }
-    );
-  });
+  bench(
+    `addItems without replace`,
+    async () => {
+      index.initIndex(newIndexSize, ...defaultParams.initIndex);
+      const labels = index.addItems(testVectorData.vectors, false);
+      expect(index.getCurrentCount()).toBe(newIndexSize);
+      expect(labels.length).toBe(newIndexSize);
+    },
+    {
+      setup,
+      iterations: 3,
+    }
+  );
+  bench(
+    `addItems with replace`,
+    async () => {
+      index.initIndex(newIndexSize, ...defaultParams.initIndex);
+      const labels = index.addItems(testVectorData.vectors, true);
+      expect(index.getCurrentCount()).toBe(newIndexSize);
+      expect(labels.length).toBe(newIndexSize);
+    },
+    {
+      setup,
+      iterations: 3,
+    }
+  );
 });

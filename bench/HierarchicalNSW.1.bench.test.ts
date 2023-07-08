@@ -5,21 +5,10 @@ import { defaultParams, HierarchicalNSW, HnswlibModule, hnswParamsForAda, loadHn
 describe('benchmark initIndex with defaults and 1536 dimensions', () => {
   let index: HierarchicalNSW;
   const setup = async () => {
-    index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions);
+    index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions, 'autotest.dat');
     // }
   };
   const baseIndexSize = 1000;
-  bench.skip(
-    `${baseIndexSize} points`,
-    async () => {
-      const newIndexSize = baseIndexSize;
-      index.initIndex(newIndexSize, ...defaultParams.initIndex);
-    },
-    {
-      setup,
-    }
-  );
-
   bench(
     `${baseIndexSize * 10} points`,
     async () => {
@@ -46,25 +35,16 @@ describe('benchmark initIndex with defaults and 1536 dimensions', () => {
 describe('benchmark initIndex with hnswParamsForAda', () => {
   let index: HierarchicalNSW;
   const setup = async () => {
-    index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions);
+    index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions, 'autotest.dat');
     // }
   };
   const baseIndexSize = 1000;
-  bench.skip(
-    `${baseIndexSize} points`,
-    async () => {
-      index.initIndex(baseIndexSize, hnswParamsForAda.m, hnswParamsForAda.efConstruction, 200, true);
-    },
-    {
-      setup,
-    }
-  );
 
   bench(
     `${baseIndexSize * 10} points`,
     async () => {
       const newIndexSize = baseIndexSize * 10;
-      index.initIndex(newIndexSize, hnswParamsForAda.m, hnswParamsForAda.efConstruction, 200, true);
+      index.initIndex(newIndexSize, hnswParamsForAda.m, hnswParamsForAda.efConstruction, 200);
     },
     {
       setup,
@@ -75,7 +55,7 @@ describe('benchmark initIndex with hnswParamsForAda', () => {
     `${baseIndexSize * 50} points`,
     async () => {
       const newIndexSize = baseIndexSize * 50;
-      index.initIndex(newIndexSize, hnswParamsForAda.m, hnswParamsForAda.efConstruction, 200, true);
+      index.initIndex(newIndexSize, hnswParamsForAda.m, hnswParamsForAda.efConstruction, 200);
     },
     {
       setup,
