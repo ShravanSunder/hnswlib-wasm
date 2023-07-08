@@ -535,10 +535,15 @@ namespace emscripten {
     uint32_t dim_;
     hnswlib::HierarchicalNSW<float>* index_;
     hnswlib::SpaceInterface<float>* space_;
-    /// Lock for adding points: addPoint, addPoints, addItems
+    /// @brief Lock for adding points: addPoint, addPoints, addItems
     std::mutex add_lock_;
+    /// @brief Cache for used labels populated from index_ by updateUsedLabelsCache()
+    std::vector<uint32_t> usedLabelsCache_;
+    /// @brief Cache for deleted labels populated from index_ by updateDeletedLabelsCache()
+    std::vector<uint32_t> deletedLabelsCache_;
     bool normalize_;
     std::string autoSaveFilename_ = "";
+
 
     HierarchicalNSW(const std::string& space_name, uint32_t dim, const std::string& autoSaveFilename)
       : index_(nullptr), space_(nullptr), normalize_(false), dim_(dim) {
@@ -615,7 +620,7 @@ namespace emscripten {
       EmscriptenFileSystemManager::syncFS(false, emscripten::val::undefined());
     }
 
-    void autoSave() {
+    void autoSaveIndex() {
       if (autoSaveFilename_ != "" && EmscriptenFileSystemManager::isInitialized()) {
         if (EmscriptenFileSystemManager::debugLogs) printf("AutoSave filename: %s\n", autoSaveFilename_.c_str());
         writeIndex(autoSaveFilename_);
@@ -630,8 +635,10 @@ namespace emscripten {
         throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
       }
       index_->resizeIndex(static_cast<size_t>(new_max_elements));
-      autoSave();
+      autoSaveIndex();
     }
+
+
 
     val getPoint(uint32_t label) {
       if (index_ == nullptr) {
@@ -649,144 +656,16 @@ namespace emscripten {
       }
     }
 
-    void addPoint(const std::vector<float>& vec, uint32_t idx, bool replace_deleted = false) {
-      std::lock_guard<std::mutex> lock(add_lock_);
-
-      if (index_ == nullptr) {
-        if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
-        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
-      }
-
-      if (vec.size() != dim_) {
-        if (EmscriptenFileSystemManager::debugLogs) printf("Invalid vector size. Must be equal to the dimension of the space. The dimension of the space is %d.\n", this->dim_);
-        throw std::invalid_argument("Invalid vector size. Must be equal to the dimension of the space. The dimension of the space is " + std::to_string(this->dim_) + ".");
-      }
-
-      std::vector<float>& mutableVec = const_cast<std::vector<float>&>(vec);
-
-      if (normalize_) {
-        internal::normalizePoints(mutableVec);
-      }
-
-      if (index_->cur_element_count == index_->max_elements_) {
-        if (EmscriptenFileSystemManager::debugLogs) printf("The maximum number of elements has been reached in index, please increased the index max_size.  max_size: %zu\n", index_->max_elements_);
-        throw std::runtime_error("The maximum number of elements has been reached in index, please increased the index max_size.  max_size: " + std::to_string(index_->max_elements_));
-      }
-
-      try {
-        index_->addPoint(reinterpret_cast<void*>(mutableVec.data()), static_cast<hnswlib::labeltype>(idx), replace_deleted);
-
-        autoSave();
-      }
-      catch (const std::exception& e) {
-        if (EmscriptenFileSystemManager::debugLogs) printf("HNSWLIB ERROR: %s\n", e.what());
-        throw std::runtime_error("HNSWLIB ERROR: " + std::string(e.what()));
-      }
-    }
-
-    /// @brief Related to addItems which has automatic labeling logic.
-    /// @param vec 
-    /// @param idVec 
-    /// @param replace_deleted 
-    void addPoints(const std::vector<std::vector<float>>& vec, const std::vector<uint32_t>& idVec, bool replace_deleted = false) {
-      std::lock_guard<std::mutex> lock(add_lock_);
-      if (index_ == nullptr) {
-        if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
-        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
-      }
-
-      if (vec.size() != idVec.size()) {
-        if (EmscriptenFileSystemManager::debugLogs) printf("The number of vectors and ids must be the same.\n");
-        throw std::runtime_error("The number of vectors and ids must be the same.");
-      }
-
-      if (vec.size() <= 0) {
-        if (EmscriptenFileSystemManager::debugLogs) printf("The number of vectors and ids must be greater than 0.\n");
-        throw std::runtime_error("The number of vectors and ids must be greater than 0.");
-      }
-
-      if (index_->cur_element_count + idVec.size() > index_->max_elements_) {
-        if (EmscriptenFileSystemManager::debugLogs) printf("The maximum number of elements has been reached in index, please increased the index max_size.  max_size: %zu\n", index_->max_elements_);
-        throw std::runtime_error("The maximum number of elements has been reached in index, please increased the index max_size.  max_size: " + std::to_string(index_->max_elements_));
-      }
-
-      try {
-        for (size_t i = 0; i < vec.size(); ++i) {
-          if (vec[i].size() != dim_) {
-            if (EmscriptenFileSystemManager::debugLogs) printf("Invalid vector size at index %zu. Must be equal to the dimension of the space. The dimension of the space is %d.\n", i, dim_);
-            throw std::invalid_argument("Invalid vector size at index " + std::to_string(i) + ". Must be equal to the dimension of the space. The dimension of the space is " + std::to_string(this->dim_) + ".");
-          }
-
-          std::vector<float>& mutableVec = const_cast<std::vector<float>&>(vec[i]);
-
-          if (normalize_) {
-            internal::normalizePoints(mutableVec);
-          }
-
-          index_->addPoint(reinterpret_cast<void*>(mutableVec.data()), static_cast<hnswlib::labeltype>(idVec[i]), replace_deleted);
-
-          autoSave();
-        }
-      }
-      catch (const std::exception& e) {
-        throw std::runtime_error("Could not addPoints " + std::string(e.what()));
-      }
-    }
-
-    /// @brief Added for an experiment of performance.  Had no noticable impact.  Stick with addItems or addPoint or addPoints
-    /// @param vecData 
-    /// @param vecSize 
-    /// @param idVecData 
-    /// @param idVecSize 
-    /// @param replace_deleted 
-    void addPointsWithPtr(emscripten::val vecData, uint32_t vecSize, emscripten::val idVecData, uint32_t idVecSize, bool replace_deleted = false) {
-      std::lock_guard<std::mutex> lock(add_lock_);
-      if (index_ == nullptr) {
-        if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
-        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
-      }
-
-      if ((vecSize / dim_) != idVecSize) {
-        if (EmscriptenFileSystemManager::debugLogs) printf("The number of vectors and ids must be the same.\n");
-        throw std::runtime_error("The number of vectors and ids must be the same.");
-      }
-
-      if (vecSize <= 0) {
-        if (EmscriptenFileSystemManager::debugLogs) printf("The number of vectors and ids must be greater than 0.\n");
-        throw std::runtime_error("The number of vectors and ids must be greater than 0.");
-      }
-
-      if (index_->cur_element_count + idVecSize > index_->max_elements_) {
-        if (EmscriptenFileSystemManager::debugLogs) printf("The maximum number of elements has been reached in index, please increase the index max_size.  max_size: %zu\n", index_->max_elements_);
-        throw std::runtime_error("The maximum number of elements has been reached in index, please increase the index max_size.  max_size: " + std::to_string(index_->max_elements_));
-      }
-
-      try {
-        for (size_t i = 0; i < idVecSize; ++i) {
-          float* vec = new float[dim_];
-
-          for (size_t j = 0; j < dim_; ++j) {
-            vec[j] = vecData[i * dim_ + j].as<float>();
-          }
-
-          if (normalize_) {
-            internal::normalizePointsPtrs(vec, dim_);
-          }
-
-          index_->addPoint(reinterpret_cast<void*>(vec), static_cast<hnswlib::labeltype>(idVecData[i].as<uint32_t>()), replace_deleted);
-
-          delete[] vec;
-        }
-
-        autoSave();
-      }
-      catch (const std::exception& e) {
-        if (EmscriptenFileSystemManager::debugLogs) printf("Could not addPoints %s\n", e.what());
-        throw std::runtime_error("Could not addPoints " + std::string(e.what()));
-      }
+    std::vector<uint32_t> getUsedLabels() {
+      return usedLabelsCache_;
     }
 
     std::vector<uint32_t> getDeletedLabels() {
+      return deletedLabelsCache_;
+    }
+
+    /// @brief Get a list of deleted labels
+    void updateDeletedLabels() {
       std::vector<uint32_t> deletedLabels;
 
       std::lock_guard<std::mutex> guard1(index_->label_lookup_lock);
@@ -798,9 +677,29 @@ namespace emscripten {
         }
       }
 
-      return deletedLabels;
+      deletedLabelsCache_ = std::move(deletedLabels);
     }
 
+    /// @brief Update local used labels cache
+    void updateUsedLabelsCache() {
+      std::vector<uint32_t> usedLabels;
+
+      std::lock_guard<std::mutex> guard1(index_->label_lookup_lock);
+      std::lock_guard<std::mutex> guard2(index_->deleted_elements_lock);
+
+      for (const auto& kv : index_->label_lookup_) {
+        if (index_->deleted_elements.find(kv.second) == index_->deleted_elements.end()) {
+          usedLabels.push_back(static_cast<uint32_t>(kv.first));
+        }
+      }
+
+      usedLabelsCache_ = std::move(usedLabels);
+    }
+
+    /// @brief Create labels based on the current used labels and labels marked deleted
+    /// @param size input array size
+    /// @param replace_deleted true if we want to reuse deleted labels
+    /// @return 
     std::vector<uint32_t> generateLabels(size_t size, bool replace_deleted) {
       std::vector<uint32_t> labels;
 
@@ -875,13 +774,100 @@ namespace emscripten {
 
             index_->addPoint(reinterpret_cast<void*>(mutableVec.data()), static_cast<hnswlib::labeltype>(labels[i]), replace_deleted);
           }
-          autoSave();
+          autoSaveIndex();
+          updateUsedLabelsCache();
           return labels;
         }
         catch (const std::exception& e) {
           if (EmscriptenFileSystemManager::debugLogs) printf("Could not addItems %s\n", e.what());
           throw std::runtime_error("Could not addItems " + std::string(e.what()));
         }
+      }
+    }
+
+    void addPoint(const std::vector<float>& vec, uint32_t idx, bool replace_deleted = false) {
+      std::lock_guard<std::mutex> lock(add_lock_);
+
+      if (index_ == nullptr) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
+        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
+      }
+
+      if (vec.size() != dim_) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Invalid vector size. Must be equal to the dimension of the space. The dimension of the space is %d.\n", this->dim_);
+        throw std::invalid_argument("Invalid vector size. Must be equal to the dimension of the space. The dimension of the space is " + std::to_string(this->dim_) + ".");
+      }
+
+      std::vector<float>& mutableVec = const_cast<std::vector<float>&>(vec);
+
+      if (normalize_) {
+        internal::normalizePoints(mutableVec);
+      }
+
+      if (index_->cur_element_count == index_->max_elements_) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("The maximum number of elements has been reached in index, please increased the index max_size.  max_size: %zu\n", index_->max_elements_);
+        throw std::runtime_error("The maximum number of elements has been reached in index, please increased the index max_size.  max_size: " + std::to_string(index_->max_elements_));
+      }
+
+      try {
+        index_->addPoint(reinterpret_cast<void*>(mutableVec.data()), static_cast<hnswlib::labeltype>(idx), replace_deleted);
+
+        autoSaveIndex();
+        updateUsedLabelsCache();
+      }
+      catch (const std::exception& e) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("HNSWLIB ERROR: %s\n", e.what());
+        throw std::runtime_error("HNSWLIB ERROR: " + std::string(e.what()));
+      }
+    }
+
+    /// @brief Related to addItems which has automatic labeling logic.
+    /// @param vec 
+    /// @param idVec 
+    /// @param replace_deleted 
+    void addPoints(const std::vector<std::vector<float>>& vec, const std::vector<uint32_t>& idVec, bool replace_deleted = false) {
+      std::lock_guard<std::mutex> lock(add_lock_);
+      if (index_ == nullptr) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
+        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
+      }
+
+      if (vec.size() != idVec.size()) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("The number of vectors and ids must be the same.\n");
+        throw std::runtime_error("The number of vectors and ids must be the same.");
+      }
+
+      if (vec.size() <= 0) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("The number of vectors and ids must be greater than 0.\n");
+        throw std::runtime_error("The number of vectors and ids must be greater than 0.");
+      }
+
+      if (index_->cur_element_count + idVec.size() > index_->max_elements_) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("The maximum number of elements has been reached in index, please increased the index max_size.  max_size: %zu\n", index_->max_elements_);
+        throw std::runtime_error("The maximum number of elements has been reached in index, please increased the index max_size.  max_size: " + std::to_string(index_->max_elements_));
+      }
+
+      try {
+        for (size_t i = 0; i < vec.size(); ++i) {
+          if (vec[i].size() != dim_) {
+            if (EmscriptenFileSystemManager::debugLogs) printf("Invalid vector size at index %zu. Must be equal to the dimension of the space. The dimension of the space is %d.\n", i, dim_);
+            throw std::invalid_argument("Invalid vector size at index " + std::to_string(i) + ". Must be equal to the dimension of the space. The dimension of the space is " + std::to_string(this->dim_) + ".");
+          }
+
+          std::vector<float>& mutableVec = const_cast<std::vector<float>&>(vec[i]);
+
+          if (normalize_) {
+            internal::normalizePoints(mutableVec);
+          }
+
+          index_->addPoint(reinterpret_cast<void*>(mutableVec.data()), static_cast<hnswlib::labeltype>(idVec[i]), replace_deleted);
+        }
+
+        autoSaveIndex();
+        updateUsedLabelsCache();
+      }
+      catch (const std::exception& e) {
+        throw std::runtime_error("Could not addPoints " + std::string(e.what()));
       }
     }
 
@@ -896,15 +882,6 @@ namespace emscripten {
       return index_->max_elements_;
     }
 
-    std::vector<int> getLabelList() {
-      std::vector<int> ids;
-      if (index_ == nullptr) return ids;
-      for (auto kv : index_->label_lookup_) {
-        ids.push_back(kv.first);
-      }
-      return ids;
-    }
-
     void markDelete(uint32_t idx) {
       if (index_ == nullptr) {
         if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
@@ -913,7 +890,7 @@ namespace emscripten {
 
       index_->markDelete(static_cast<hnswlib::labeltype>(idx));
 
-      autoSave();
+      autoSaveIndex();
     }
 
 
@@ -928,7 +905,7 @@ namespace emscripten {
           index_->markDelete(static_cast<hnswlib::labeltype>(label));
         }
 
-        autoSave();
+        autoSaveIndex();
       }
       catch (const std::exception& e) {
         if (EmscriptenFileSystemManager::debugLogs) printf("Could not markDeleteItems %s\n", e.what());
@@ -945,7 +922,7 @@ namespace emscripten {
 
       index_->unmarkDelete(static_cast<hnswlib::labeltype>(idx));
 
-      autoSave();
+      autoSaveIndex();
     }
 
     emscripten::val searchKnn(const std::vector<float>& vec, uint32_t k, emscripten::val js_filterFn = emscripten::val::undefined()) {
@@ -1035,6 +1012,60 @@ namespace emscripten {
         index_->setEf(static_cast<size_t>(ef));
       }
     }
+
+    /*
+     /// @brief Added for an experiment of performance.  Had no noticable impact.  Stick with addItems or addPoint or addPoints
+    /// @param vecData
+    /// @param vecSize
+    /// @param idVecData
+    /// @param idVecSize
+    /// @param replace_deleted
+    void addPointsWithPtr(emscripten::val vecData, uint32_t vecSize, emscripten::val idVecData, uint32_t idVecSize, bool replace_deleted = false) {
+      std::lock_guard<std::mutex> lock(add_lock_);
+      if (index_ == nullptr) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Search index has not been initialized, call `initIndex` in advance.\n");
+        throw std::runtime_error("Search index has not been initialized, call `initIndex` in advance.");
+      }
+
+      if ((vecSize / dim_) != idVecSize) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("The number of vectors and ids must be the same.\n");
+        throw std::runtime_error("The number of vectors and ids must be the same.");
+      }
+
+      if (vecSize <= 0) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("The number of vectors and ids must be greater than 0.\n");
+        throw std::runtime_error("The number of vectors and ids must be greater than 0.");
+      }
+
+      if (index_->cur_element_count + idVecSize > index_->max_elements_) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("The maximum number of elements has been reached in index, please increase the index max_size.  max_size: %zu\n", index_->max_elements_);
+        throw std::runtime_error("The maximum number of elements has been reached in index, please increase the index max_size.  max_size: " + std::to_string(index_->max_elements_));
+      }
+
+      try {
+        for (size_t i = 0; i < idVecSize; ++i) {
+          float* vec = new float[dim_];
+
+          for (size_t j = 0; j < dim_; ++j) {
+            vec[j] = vecData[i * dim_ + j].as<float>();
+          }
+
+          if (normalize_) {
+            internal::normalizePointsPtrs(vec, dim_);
+          }
+
+          index_->addPoint(reinterpret_cast<void*>(vec), static_cast<hnswlib::labeltype>(idVecData[i].as<uint32_t>()), replace_deleted);
+
+          delete[] vec;
+        }
+
+        autoSave();
+      }
+      catch (const std::exception& e) {
+        if (EmscriptenFileSystemManager::debugLogs) printf("Could not addPoints %s\n", e.what());
+        throw std::runtime_error("Could not addPoints " + std::string(e.what()));
+      }
+    } */
   };
 
 
@@ -1085,10 +1116,9 @@ namespace emscripten {
       .function("addPoint", &HierarchicalNSW::addPoint)
       .function("addPoints", &HierarchicalNSW::addPoints)
       .function("addItems", &HierarchicalNSW::addItems)
-      //.function("addPointsWithPtr", static_cast<void(HierarchicalNSW::*)(float*, uint32_t, uint32_t*, uint32_t, bool)>(&HierarchicalNSW::addPointsWithPtr), emscripten::allow_raw_pointers())
-      // .function("addPointsWithPtr", &HierarchicalNSW::addPointsWithPtr)
+      .function("getUsedLabels", &HierarchicalNSW::getUsedLabels)
+      .function("getDeletedLabels", &HierarchicalNSW::getDeletedLabels)
       .function("getMaxElements", &HierarchicalNSW::getMaxElements)
-      .function("getLabelList", &HierarchicalNSW::getLabelList)
       .function("markDelete", &HierarchicalNSW::markDelete)
       .function("markDeleteItems", &HierarchicalNSW::markDeleteItems)
       .function("unmarkDelete", &HierarchicalNSW::unmarkDelete)
