@@ -79,5 +79,25 @@
     "algorithm": "cpp"
   },
   "vitest.enable": true,
-  "vitest.commandLine": "yarn test"
+  "vitest.commandLine": "yarn test",
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/CVS": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true,
+    "**/.cache": true,
+    "**/.vs/": true,
+    "**/*.cs": true,
+    "**/*.orig": true,
+    "**/bin/": true,
+    "**/build/": true,
+    "**/build/**/*": true,
+    "**/debug/": true,
+    "**/obj": true,
+    "**/dist": true,
+    "lib": true
+  },
+  "explorerExclude.backup": {}
 }

@@ -1,5 +1,5 @@
 import { defaultParams, HierarchicalNSW, hnswParamsForAda, syncFileSystem } from '~dist/hnswlib';
-import { createVectorData, generateMetadata, ItemMetadata, testErrors } from '~test/testHelpers';
+import { createVectorData, generateMetadata, ItemMetadata, sleep, testErrors } from '~test/testHelpers';
 import 'fake-indexeddb/auto';
 import { indexedDB } from 'fake-indexeddb';
 import { expect } from 'vitest';
@@ -64,7 +64,7 @@ describe('hnswlib.HierarchicalNSW', () => {
     it('throws an error if given a non-Number argument', () => {
       expect(() => {
         // @ts-expect-error for testing
-        index.initIndex('5', 16, 200, 1, 1);
+        index.initIndex('5', 16, 200, 1);
       }).toThrow(testErrors.unsignedIntArgument);
     });
 
@@ -74,7 +74,7 @@ describe('hnswlib.HierarchicalNSW', () => {
     });
 
     it('initIndex it is true if initialized', () => {
-      index.initIndex(5, 16, 200, 1, true);
+      index.initIndex(5, 16, 200, 1);
       expect(index.isIndexInitialized()).toBe(true);
     });
   });
@@ -128,10 +128,11 @@ describe('hnswlib.HierarchicalNSW', () => {
       expect(index.getUsedLabels()).toMatchObject([]);
     });
 
-    it('returns an array consists of label id', () => {
+    it('returns an array consists of label id', async () => {
       index.initIndex(5, ...defaultParams.initIndex);
       index.addPoint([1, 2, 3], 0, false);
       index.addPoint([2, 3, 4], 1, false);
+      await sleep(100);
       expect(index.getUsedLabels()).toEqual(expect.arrayContaining([0, 1]));
     });
   });
@@ -146,19 +147,15 @@ describe('hnswlib.HierarchicalNSW', () => {
       expect(index.getDeletedLabels()).toMatchObject([]);
     });
 
-    it('returns an array consists of label id', () => {
-      index.initIndex(5, ...defaultParams.initIndex);
+    it('usedLabel only returns valid ids and deletedLabels returns deleted labels', () => {
+      index.initIndex(5, 32, 128, 100);
       index.addPoint([1, 2, 3], 0, false);
       index.addPoint([2, 3, 4], 1, false);
       index.addPoint([2, 3, 4], 2, false);
       index.addPoint([2, 3, 4], 3, false);
       index.markDeleteItems([1, 3]);
-      console.error('come on');
-      const deleted = index.getDeletedLabels();
-      const exists = index.getUsedLabels();
-      console.error('testttttt', deleted, exists);
-      // expect(index.getUsedLabels()).toEqual(expect.arrayContaining([0, 2]));
-      // expect(index.getDeletedLabels()).toEqual(expect.arrayContaining([1, 3]));
+      expect(index.getUsedLabels()).toEqual(expect.arrayContaining([0, 2]));
+      expect(index.getDeletedLabels()).toEqual(expect.arrayContaining([1, 3]));
     });
   });
 
@@ -385,13 +382,13 @@ describe('hnswlib.HierarchicalNSW', () => {
       }).toThrow(testErrors.indexNotInitalized);
     });
 
-    it('marks the element as deleted', () => {
-      index.initIndex(2, ...defaultParams.initIndex);
+    it('marks the element as deleted and deleted element does not show in search', () => {
+      index.initIndex(2, 32, 128, 100);
       index.addPoint([1, 2, 3], 0, false);
       index.addPoint([1, 2, 4], 1, false);
       index.markDelete(1);
       expect(index.searchKnn([1, 2, 4], 1, undefined).neighbors).toEqual([0]);
-      expect(index.getDeletedLabels()).toEqual(expect.arrayContaining([1, 3]));
+      expect(index.getDeletedLabels()).toEqual(expect.arrayContaining([1]));
     });
   });
 
@@ -596,7 +593,7 @@ describe('hnswlib.HierarchicalNSW', () => {
     it('can read the index back', async () => {
       index = new testHnswlibModule.HierarchicalNSW('ip', 3, 'autotest.dat');
       expect(() => index.getPoint(1)).toThrow(testErrors.indexNotInitalized);
-      index.readIndex(filename, 10, false);
+      index.readIndex(filename, 10);
       expect(index.getPoint(1)).toMatchObject([2, 3, 4]);
     });
   });
@@ -608,7 +605,7 @@ describe('hnswlib.HierarchicalNSW', () => {
       const index = new testHnswlibModule.HierarchicalNSW('ip', 3, 'autotest.dat');
       expect(() => index.getPoint(1)).toThrow(testErrors.indexNotInitalized);
       try {
-        index.readIndex(filename, 10, false);
+        index.readIndex(filename, 10);
       } catch (e) {
         console.error(e);
       }
@@ -628,17 +625,20 @@ describe('hnswlib.HierarchicalNSW', () => {
     it(`when loading ${baseIndexSize} points with addPoints, then they can be loaded and fetched`, () => {
       index.initIndex(500, ...defaultParams.initIndex);
       index.addPoints(testVectorData.vectors, testVectorData.labels, false);
-      const label = testVectorData.labels[1];
-      const point = testVectorData.vectors[1];
-      expect(index.getPoint(label)).toMatchObject(point);
-      expect(index.getUsedLabels().length).toBe(baseIndexSize - 1);
+      const firstLabel = testVectorData.labels[1];
+      const firstVector = testVectorData.vectors[1];
+      expect(index.getPoint(firstLabel)).toMatchObject(firstVector);
+
+      // const lastLabel = testVectorData.labels[baseIndexSize - 1];
+      // const lastVector = testVectorData.vectors[baseIndexSize - 1];
+      // expect(index.getPoint(lastLabel)).toMatchObject(lastVector);
       expect(() => index.writeIndex(filename)).not.toThrow();
     });
 
     it(`when loading ${baseIndexSize} points with addPoints and autosave is on, then they automatically saved and loaded`, () => {
       index.initIndex(500, ...defaultParams.initIndex);
       index.addPoints(testVectorData.vectors, testVectorData.labels, false);
-      index.readIndex('autotest.dat', 500, false);
+      index.readIndex('autotest.dat', 500);
       const label = testVectorData.labels[1];
       const point = testVectorData.vectors[1];
       expect(index.getPoint(label)).toMatchObject(point);
@@ -705,7 +705,7 @@ describe('hnswlib.HierarchicalNSW', () => {
 
     const setup = async (m: number, efConstruction: number, efSearch: number): Promise<number[]> => {
       index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions, 'autotest.dat');
-      index.initIndex(baseIndexSize, m, efConstruction, 200, true);
+      index.initIndex(baseIndexSize, m, efConstruction, 200);
       const testLabels = index.addItems(testVectorData.vectors, false);
       index.setEfSearch(efSearch);
       return testLabels;

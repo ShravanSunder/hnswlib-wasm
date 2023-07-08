@@ -10,7 +10,7 @@ async function setupBefore() {
   const baseIndexSize = 10000;
   const testVectorData = createVectorData(baseIndexSize, hnswParamsForAda.dimensions);
   index = new testHnswlibModule.HierarchicalNSW('l2', hnswParamsForAda.dimensions, 'autotest.dat');
-  index.initIndex(baseIndexSize, hnswParamsForAda.m, hnswParamsForAda.efConstruction, 200, true);
+  index.initIndex(baseIndexSize, hnswParamsForAda.m, hnswParamsForAda.efConstruction, 200);
   await sleep(25);
 
   // Add vectors in chunks of 1000

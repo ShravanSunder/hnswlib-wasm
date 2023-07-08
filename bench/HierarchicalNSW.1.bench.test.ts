@@ -44,7 +44,7 @@ describe('benchmark initIndex with hnswParamsForAda', () => {
     `${baseIndexSize * 10} points`,
     async () => {
       const newIndexSize = baseIndexSize * 10;
-      index.initIndex(newIndexSize, hnswParamsForAda.m, hnswParamsForAda.efConstruction, 200, true);
+      index.initIndex(newIndexSize, hnswParamsForAda.m, hnswParamsForAda.efConstruction, 200);
     },
     {
       setup,
@@ -55,7 +55,7 @@ describe('benchmark initIndex with hnswParamsForAda', () => {
     `${baseIndexSize * 50} points`,
     async () => {
       const newIndexSize = baseIndexSize * 50;
-      index.initIndex(newIndexSize, hnswParamsForAda.m, hnswParamsForAda.efConstruction, 200, true);
+      index.initIndex(newIndexSize, hnswParamsForAda.m, hnswParamsForAda.efConstruction, 200);
     },
     {
       setup,

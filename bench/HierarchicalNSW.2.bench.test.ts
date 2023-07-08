@@ -28,7 +28,7 @@ describe(`benchmark initIndex and addPoints/additems ${baseIndexSize} items`, ()
   bench(
     `addItems with replace`,
     async () => {
-      index.initIndex(newIndexSize, ...defaultParams.initIndexReplace);
+      index.initIndex(newIndexSize, ...defaultParams.initIndex);
       const labels = index.addItems(testVectorData.vectors, true);
       expect(index.getCurrentCount()).toBe(newIndexSize);
       expect(labels.length).toBe(newIndexSize);
