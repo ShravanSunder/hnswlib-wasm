@@ -40,7 +40,7 @@ export default defineConfig({
     tsconfigPaths(),
     dts({
       insertTypesEntry: true,
-      tsConfigFilePath: './tsconfig.build.json',
+      tsconfigPath: './tsconfig.build.json',
     }),
   ],
   optimizeDeps: {},
